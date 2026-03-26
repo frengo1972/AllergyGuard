@@ -1,0 +1,166 @@
+{
+  "version": 1,
+  "updated_at": "2026-03-26",
+  "patterns": [
+    {
+      "id": "contains_it",
+      "text": "contiene",
+      "language": "it",
+      "type": "contains",
+      "status": "verified",
+      "confidence": 0.99
+    },
+    {
+      "id": "contains_it_2",
+      "text": "ingredienti",
+      "language": "it",
+      "type": "contains",
+      "status": "verified",
+      "confidence": 0.95
+    },
+    {
+      "id": "may_contain_it",
+      "text": "può contenere tracce di",
+      "language": "it",
+      "type": "may_contain",
+      "status": "verified",
+      "confidence": 0.99
+    },
+    {
+      "id": "may_contain_it_2",
+      "text": "potrebbe contenere",
+      "language": "it",
+      "type": "may_contain",
+      "status": "verified",
+      "confidence": 0.95
+    },
+    {
+      "id": "facility_it",
+      "text": "prodotto in uno stabilimento che utilizza",
+      "language": "it",
+      "type": "facility",
+      "status": "verified",
+      "confidence": 0.95
+    },
+    {
+      "id": "contains_en",
+      "text": "contains",
+      "language": "en",
+      "type": "contains",
+      "status": "verified",
+      "confidence": 0.99
+    },
+    {
+      "id": "contains_en_2",
+      "text": "ingredients",
+      "language": "en",
+      "type": "contains",
+      "status": "verified",
+      "confidence": 0.95
+    },
+    {
+      "id": "may_contain_en",
+      "text": "may contain traces of",
+      "language": "en",
+      "type": "may_contain",
+      "status": "verified",
+      "confidence": 0.99
+    },
+    {
+      "id": "may_contain_en_2",
+      "text": "may contain",
+      "language": "en",
+      "type": "may_contain",
+      "status": "verified",
+      "confidence": 0.97
+    },
+    {
+      "id": "facility_en",
+      "text": "manufactured in a facility that also processes",
+      "language": "en",
+      "type": "facility",
+      "status": "verified",
+      "confidence": 0.95
+    },
+    {
+      "id": "contains_de",
+      "text": "enthält",
+      "language": "de",
+      "type": "contains",
+      "status": "verified",
+      "confidence": 0.99
+    },
+    {
+      "id": "contains_de_2",
+      "text": "zutaten",
+      "language": "de",
+      "type": "contains",
+      "status": "verified",
+      "confidence": 0.95
+    },
+    {
+      "id": "may_contain_de",
+      "text": "kann Spuren von",
+      "language": "de",
+      "type": "may_contain",
+      "status": "verified",
+      "confidence": 0.99
+    },
+    {
+      "id": "may_contain_de_2",
+      "text": "kann enthalten",
+      "language": "de",
+      "type": "may_contain",
+      "status": "verified",
+      "confidence": 0.95
+    },
+    {
+      "id": "contains_fr",
+      "text": "contient",
+      "language": "fr",
+      "type": "contains",
+      "status": "verified",
+      "confidence": 0.99
+    },
+    {
+      "id": "contains_fr_2",
+      "text": "ingrédients",
+      "language": "fr",
+      "type": "contains",
+      "status": "verified",
+      "confidence": 0.95
+    },
+    {
+      "id": "may_contain_fr",
+      "text": "peut contenir des traces de",
+      "language": "fr",
+      "type": "may_contain",
+      "status": "verified",
+      "confidence": 0.99
+    },
+    {
+      "id": "contains_es",
+      "text": "contiene",
+      "language": "es",
+      "type": "contains",
+      "status": "verified",
+      "confidence": 0.99
+    },
+    {
+      "id": "contains_es_2",
+      "text": "ingredientes",
+      "language": "es",
+      "type": "contains",
+      "status": "verified",
+      "confidence": 0.95
+    },
+    {
+      "id": "may_contain_es",
+      "text": "puede contener trazas de",
+      "language": "es",
+      "type": "may_contain",
+      "status": "verified",
+      "confidence": 0.99
+    }
+  ]
+}
