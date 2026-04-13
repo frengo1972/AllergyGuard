@@ -1,0 +1,10 @@
+# Template. Copia in `android/key.properties` e compila.
+# NON committare il file reale: e' in .gitignore.
+#
+# Genera il keystore con:
+# keytool -genkey -v -keystore "C:\Users\VP295\OneDrive - CNH Industrial\GitHub\keystores\allergyguard-release.jks" -keyalg RSA -keysize 2048 -validity 10000 -alias allergyguard
+
+storePassword=LA_TUA_PASSWORD_KEYSTORE
+keyPassword=LA_TUA_PASSWORD_CHIAVE
+keyAlias=allergyguard
+storeFile=C:\\Users\\VP295\\OneDrive - CNH Industrial\\GitHub\\keystores\\allergyguard-release.jks

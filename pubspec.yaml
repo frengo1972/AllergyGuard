@@ -55,9 +55,30 @@ dev_dependencies:
   json_serializable: ^6.7.0
   mockito: ^5.4.0
   mocktail: ^1.0.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.0
 
 flutter:
   uses-material-design: true
   assets:
     - .env
     - assets/allergens/
+    - assets/branding/
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/branding/logo.png"
+  adaptive_icon_background: "#1976D2"
+  adaptive_icon_foreground: "assets/branding/logo.png"
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#1976D2"
+  image: "assets/branding/logo.png"
+  android_12:
+    image: "assets/branding/logo.png"
+    color: "#1976D2"
+  android: true
+  ios: false
+  fullscreen: false
