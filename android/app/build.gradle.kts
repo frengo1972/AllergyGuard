@@ -56,6 +56,12 @@ android {
                 // Fallback a debug per sviluppo locale. Upload release richiede key.properties.
                 signingConfigs.getByName("debug")
             }
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }
