@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AllergyGuard — Privacy Policy</title>
+<style>
+  :root {
+    --brand: #1976D2;
+    --accent: #43A047;
+    --text: #1a1a1a;
+    --muted: #555;
+    --bg: #fafafa;
+    --card: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  header {
+    background: linear-gradient(135deg, var(--brand), #1565C0);
+    color: white;
+    padding: 48px 24px;
+    text-align: center;
+  }
+  header h1 { margin: 0 0 8px; font-size: 32px; }
+  header p { margin: 0; opacity: 0.9; }
+  main {
+    max-width: 760px;
+    margin: -24px auto 48px;
+    padding: 32px 24px;
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  h2 {
+    color: var(--brand);
+    margin-top: 32px;
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 4px;
+  }
+  h3 { color: var(--text); margin-top: 24px; }
+  .lang-switch {
+    text-align: center;
+    margin: 24px 0;
+  }
+  .lang-switch a {
+    display: inline-block;
+    padding: 6px 14px;
+    margin: 0 4px;
+    border-radius: 16px;
+    background: #eee;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 14px;
+  }
+  .lang-switch a.active { background: var(--brand); color: white; }
+  .meta { color: var(--muted); font-size: 14px; }
+  ul { padding-left: 20px; }
+  .section[hidden] { display: none; }
+  footer {
+    text-align: center;
+    padding: 24px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  a { color: var(--brand); }
+  code {
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>AllergyGuard</h1>
+  <p>Privacy Policy · Informativa Privacy</p>
+</header>
+<main>
+  <div class="lang-switch">
+    <a href="#it" onclick="switchLang('it')" id="tab-it" class="active">Italiano</a>
+    <a href="#en" onclick="switchLang('en')" id="tab-en">English</a>
+  </div>
+
+  <section id="section-it" class="section">
+    <p class="meta">Ultimo aggiornamento: 13 aprile 2026 · Versione 1.0</p>
+
+    <h2>1. Introduzione</h2>
+    <p>
+      AllergyGuard ("l'app") è uno strumento di supporto alle decisioni per la verifica
+      di allergeni su etichette alimentari. L'app è sviluppata come progetto indipendente
+      e <strong>non raccoglie dati personali identificativi</strong> degli utenti.
+    </p>
+    <p>
+      <strong>Disclaimer importante:</strong> AllergyGuard NON è un dispositivo medico
+      né uno strumento di certificazione sanitaria. I risultati forniti hanno valore
+      puramente informativo e non sostituiscono in alcun modo la lettura diretta
+      dell'etichetta, il parere di un medico o di un allergologo.
+    </p>
+
+    <h2>2. Dati NON raccolti</h2>
+    <p>L'app <strong>non raccoglie</strong>:</p>
+    <ul>
+      <li>Nome, cognome, email, numero di telefono</li>
+      <li>Indirizzo, posizione GPS precisa o geolocalizzazione</li>
+      <li>Contatti, foto, file personali del dispositivo</li>
+      <li>Identificativi pubblicitari (Advertising ID)</li>
+      <li>Cronologia di navigazione web</li>
+      <li>Dati sanitari o anagrafici</li>
+    </ul>
+
+    <h2>3. Dati trattati</h2>
+    <p>L'app tratta esclusivamente i seguenti dati in forma <strong>anonima e aggregata</strong>:</p>
+    <ul>
+      <li>
+        <strong>Device ID anonimo</strong>: un identificativo casuale (UUID v4) generato
+        localmente al primo avvio, usato solo per evitare duplicazione dei contributi della
+        community. Non è collegato al tuo account, email o dispositivo fisico.
+      </li>
+      <li>
+        <strong>Dati di utilizzo aggregati</strong>: numero di scansioni effettuate,
+        allergene rilevato, livello di risultato (DANGER/WARNING/SAFE/UNKNOWN), codice
+        paese ricavato dal locale del dispositivo (es. "IT", "DE"). Non è possibile
+        risalire al singolo utente.
+      </li>
+      <li>
+        <strong>Feedback utente (facoltativo)</strong>: se scegli di inviare un feedback,
+        verrà memorizzato il testo del feedback, il livello di risultato contestato
+        e il device ID anonimo. Nessun altro dato viene inviato.
+      </li>
+      <li>
+        <strong>Testo OCR delle etichette</strong>: viene processato localmente sul
+        dispositivo. Frammenti di testo privi di informazioni personali possono essere
+        inviati al backend per migliorare il riconoscimento di pattern linguistici
+        (es. "contiene", "può contenere tracce"). Non vengono inviate immagini.
+      </li>
+    </ul>
+
+    <h2>4. Dove finiscono i dati</h2>
+    <p>
+      I dati aggregati anonimi sono conservati su un backend Supabase (server UE)
+      con crittografia in transito (TLS) e a riposo. La base dati della community è
+      accessibile a tutti gli utenti dell'app in forma aggregata.
+    </p>
+
+    <h2>5. Dati di terze parti</h2>
+    <p>L'app utilizza i seguenti servizi esterni:</p>
+    <ul>
+      <li>
+        <strong>Open Food Facts</strong> (openfoodfacts.org): per la ricerca di prodotti
+        via codice a barre. Licenza ODbL. Quando esegui una scansione del codice a barre,
+        il codice a barre viene inviato a questo servizio pubblico. Nessun altro dato
+        viene condiviso.
+      </li>
+      <li>
+        <strong>Google ML Kit</strong>: OCR on-device, esegue localmente sul dispositivo.
+        Nessun invio di immagini a server Google.
+      </li>
+      <li>
+        <strong>Supabase</strong> (supabase.com): backend per i dati aggregati anonimi
+        e il sistema di apprendimento della community.
+      </li>
+    </ul>
+
+    <h2>6. Permessi richiesti</h2>
+    <ul>
+      <li>
+        <strong>Fotocamera</strong>: necessaria per scansionare codici a barre e leggere
+        etichette. Le immagini sono processate localmente e non vengono salvate né inviate.
+      </li>
+      <li>
+        <strong>Internet</strong>: necessaria per ricercare prodotti (Open Food Facts) e
+        sincronizzare pattern linguistici aggiornati dalla community.
+      </li>
+    </ul>
+
+    <h2>7. Conservazione dei dati</h2>
+    <p>
+      I dati aggregati anonimi sono conservati a tempo indeterminato per finalità
+      statistiche e di miglioramento dell'app. Dato che non sono collegati a identità
+      personali, non è tecnicamente possibile cancellarli su richiesta.
+    </p>
+    <p>
+      I dati locali sul dispositivo (storico scansioni, preferenze, allergeni selezionati)
+      possono essere cancellati in qualsiasi momento dall'interno dell'app:
+      <code>Impostazioni → Elimina dati locali</code>.
+    </p>
+
+    <h2>8. Diritti dell'utente (GDPR)</h2>
+    <p>
+      Non raccogliendo dati personali identificativi, i diritti GDPR di accesso,
+      rettifica, cancellazione e portabilità non sono applicabili in modo classico.
+      Puoi comunque:
+    </p>
+    <ul>
+      <li>Cancellare tutti i dati locali tramite le impostazioni dell'app.</li>
+      <li>Disinstallare l'app per rimuovere completamente il device ID anonimo.</li>
+      <li>
+        Contattare lo sviluppatore per domande sulla privacy all'indirizzo indicato
+        nella sezione Contatti.
+      </li>
+    </ul>
+
+    <h2>9. Minori</h2>
+    <p>
+      L'app non è specificamente destinata a minori di 13 anni. Non raccogliamo
+      consapevolmente dati da minori. Se un genitore/tutore ritiene che il proprio
+      figlio abbia fornito dati tramite l'app, può contattarci per richiedere
+      chiarimenti.
+    </p>
+
+    <h2>10. Modifiche a questa informativa</h2>
+    <p>
+      Questa informativa può essere aggiornata. La versione corrente è sempre
+      disponibile all'URL pubblico nella sezione "Informazioni" dell'app. La data
+      di ultimo aggiornamento è riportata all'inizio di questo documento.
+    </p>
+
+    <h2>11. Contatti</h2>
+    <p>
+      Per domande relative alla privacy, scrivi a:
+      <a href="mailto:allergyguard.app@gmail.com">allergyguard.app@gmail.com</a>
+    </p>
+    <p>
+      Repository pubblico del progetto:
+      <a href="https://github.com/frengo1972/AllergyGuard">
+        github.com/frengo1972/AllergyGuard
+      </a>
+    </p>
+  </section>
+
+  <section id="section-en" class="section" hidden>
+    <p class="meta">Last updated: April 13, 2026 · Version 1.0</p>
+
+    <h2>1. Introduction</h2>
+    <p>
+      AllergyGuard ("the app") is a decision-support tool for verifying allergens
+      on food labels. The app is developed as an independent project and
+      <strong>does not collect personally identifiable data</strong> from users.
+    </p>
+    <p>
+      <strong>Important disclaimer:</strong> AllergyGuard is NOT a medical device or
+      safety certification tool. Results are informational only and do not replace
+      direct label reading or the advice of a doctor or allergist.
+    </p>
+
+    <h2>2. Data NOT collected</h2>
+    <p>The app <strong>does not collect</strong>:</p>
+    <ul>
+      <li>Name, surname, email, phone number</li>
+      <li>Address, precise GPS or geolocation</li>
+      <li>Contacts, photos, personal files from the device</li>
+      <li>Advertising identifiers (Advertising ID)</li>
+      <li>Web browsing history</li>
+      <li>Health or demographic data</li>
+    </ul>
+
+    <h2>3. Data processed</h2>
+    <p>The app processes only the following data in <strong>anonymous and aggregated</strong> form:</p>
+    <ul>
+      <li>
+        <strong>Anonymous device ID</strong>: a random identifier (UUID v4) generated
+        locally at first launch, used only to deduplicate community contributions.
+        It is not linked to your account, email, or physical device.
+      </li>
+      <li>
+        <strong>Aggregated usage data</strong>: scan count, detected allergen, result
+        level (DANGER/WARNING/SAFE/UNKNOWN), country code derived from device locale.
+        Cannot be traced back to individual users.
+      </li>
+      <li>
+        <strong>User feedback (optional)</strong>: if you choose to submit feedback,
+        the feedback text, contested result level, and anonymous device ID are stored.
+        No other data is sent.
+      </li>
+      <li>
+        <strong>OCR text from labels</strong>: processed locally on-device. Fragments
+        of text containing no personal information may be sent to the backend to
+        improve recognition of linguistic patterns (e.g. "contains", "may contain
+        traces"). Images are never sent.
+      </li>
+    </ul>
+
+    <h2>4. Where data is stored</h2>
+    <p>
+      Anonymous aggregated data is stored on a Supabase backend (EU servers) with
+      encryption in transit (TLS) and at rest. The community database is accessible
+      to all app users in aggregated form.
+    </p>
+
+    <h2>5. Third-party services</h2>
+    <ul>
+      <li>
+        <strong>Open Food Facts</strong> (openfoodfacts.org): product lookup by
+        barcode. ODbL license. The barcode is sent to this public service when you
+        perform a barcode scan. No other data is shared.
+      </li>
+      <li>
+        <strong>Google ML Kit</strong>: on-device OCR, runs entirely on your device.
+        No images are sent to Google servers.
+      </li>
+      <li>
+        <strong>Supabase</strong> (supabase.com): backend for anonymous aggregated
+        data and community learning system.
+      </li>
+    </ul>
+
+    <h2>6. Permissions requested</h2>
+    <ul>
+      <li>
+        <strong>Camera</strong>: required to scan barcodes and read labels. Images
+        are processed locally and neither saved nor transmitted.
+      </li>
+      <li>
+        <strong>Internet</strong>: required for product lookup (Open Food Facts) and
+        syncing updated linguistic patterns from the community.
+      </li>
+    </ul>
+
+    <h2>7. Data retention</h2>
+    <p>
+      Anonymous aggregated data is retained indefinitely for statistical and app
+      improvement purposes. Since it is not linked to personal identities, it
+      cannot be technically deleted on request.
+    </p>
+    <p>
+      Local device data (scan history, preferences, selected allergens) can be
+      cleared at any time from within the app:
+      <code>Settings → Delete local data</code>.
+    </p>
+
+    <h2>8. User rights (GDPR)</h2>
+    <p>
+      Since we do not collect personally identifiable data, the classic GDPR rights
+      of access, rectification, erasure, and portability do not apply in the usual
+      manner. However, you can:
+    </p>
+    <ul>
+      <li>Delete all local data via the app settings.</li>
+      <li>Uninstall the app to completely remove the anonymous device ID.</li>
+      <li>Contact the developer with any privacy questions via the address below.</li>
+    </ul>
+
+    <h2>9. Minors</h2>
+    <p>
+      The app is not specifically targeted at children under 13. We do not
+      knowingly collect data from minors. Parents or guardians who believe their
+      child has provided data via the app may contact us for clarification.
+    </p>
+
+    <h2>10. Changes to this policy</h2>
+    <p>
+      This policy may be updated. The current version is always available at the
+      public URL in the "About" section of the app. The last update date is noted
+      at the top of this document.
+    </p>
+
+    <h2>11. Contact</h2>
+    <p>
+      For privacy-related questions, write to:
+      <a href="mailto:allergyguard.app@gmail.com">allergyguard.app@gmail.com</a>
+    </p>
+    <p>
+      Public project repository:
+      <a href="https://github.com/frengo1972/AllergyGuard">
+        github.com/frengo1972/AllergyGuard
+      </a>
+    </p>
+  </section>
+</main>
+<footer>
+  AllergyGuard — Open source under the MIT License ·
+  <a href="https://github.com/frengo1972/AllergyGuard">GitHub</a>
+</footer>
+<script>
+  function switchLang(lang) {
+    document.getElementById('section-it').hidden = lang !== 'it';
+    document.getElementById('section-en').hidden = lang !== 'en';
+    document.getElementById('tab-it').classList.toggle('active', lang === 'it');
+    document.getElementById('tab-en').classList.toggle('active', lang === 'en');
+  }
+  (function init() {
+    const hash = window.location.hash.replace('#', '');
+    if (hash === 'en') switchLang('en');
+  })();
+</script>
+</body>
+</html>

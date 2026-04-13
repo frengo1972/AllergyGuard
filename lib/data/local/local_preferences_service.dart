@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
 class LanguageOption {
   const LanguageOption({
@@ -23,6 +24,7 @@ class LocalPreferencesService {
   static const String resultAutoPlayKey = 'result_auto_play';
   static const String scanHistoryKey = 'scan_history';
   static const String pendingReportsKey = 'pending_reports';
+  static const String deviceIdKey = 'device_id';
 
   static const List<LanguageOption> supportedLanguages = [
     LanguageOption(code: 'it', label: 'Italiano', flagEmoji: '🇮🇹'),
@@ -126,6 +128,17 @@ class LocalPreferencesService {
   Future<void> setPendingReportsJson(List<String> items) async {
     final prefs = await _prefs;
     await prefs.setStringList(pendingReportsKey, items);
+  }
+
+  /// Ritorna un device ID anonimo stabile (UUID v4) generato al primo uso.
+  /// Usato per deduplicare contributi community, non è legato a identità.
+  Future<String> getOrCreateDeviceId() async {
+    final prefs = await _prefs;
+    final existing = prefs.getString(deviceIdKey);
+    if (existing != null && existing.isNotEmpty) return existing;
+    final newId = const Uuid().v4();
+    await prefs.setString(deviceIdKey, newId);
+    return newId;
   }
 }
 

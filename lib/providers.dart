@@ -10,14 +10,24 @@ import 'package:allergyguard/core/scanner/barcode_scanner.dart';
 import 'package:allergyguard/core/scanner/open_food_facts_client.dart';
 import 'package:allergyguard/core/tts/tts_service.dart';
 import 'package:allergyguard/data/remote/allergen_remote_repo.dart';
+import 'package:allergyguard/data/remote/feedback_remote_repo.dart';
 
 /// Provider Dio HTTP client
 final dioProvider = Provider<Dio>((ref) => Dio());
 
-/// Provider Supabase client
+/// Provider Supabase client (throws se Supabase non inizializzato).
 final supabaseProvider = Provider<SupabaseClient>(
   (ref) => Supabase.instance.client,
 );
+
+/// Provider Supabase client opzionale: ritorna null se backend non configurato.
+final optionalSupabaseProvider = Provider<SupabaseClient?>((ref) {
+  try {
+    return Supabase.instance.client;
+  } catch (_) {
+    return null;
+  }
+});
 
 /// Provider Pattern Repository
 final patternRepositoryProvider = Provider<PatternRepository>(
@@ -59,4 +69,9 @@ final ttsServiceProvider = Provider<TtsService>((ref) {
 /// Provider Allergen Remote Repository
 final allergenRemoteRepoProvider = Provider<AllergenRemoteRepository>((ref) {
   return AllergenRemoteRepository(client: ref.watch(supabaseProvider));
+});
+
+/// Provider Feedback Remote Repository (accetta backend opzionale).
+final feedbackRemoteRepoProvider = Provider<FeedbackRemoteRepository>((ref) {
+  return FeedbackRemoteRepository(client: ref.watch(optionalSupabaseProvider));
 });

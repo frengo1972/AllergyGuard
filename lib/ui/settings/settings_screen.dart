@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:allergyguard/core/tts/tts_service.dart';
 import 'package:allergyguard/data/local/local_preferences_service.dart';
 import 'package:allergyguard/ui/common/visual_metadata.dart';
+import 'package:allergyguard/ui/about/about_screen.dart';
 import 'package:allergyguard/ui/allergen_setup/allergen_setup_screen.dart';
+import 'package:allergyguard/ui/feedback/feedback_screen.dart';
 import 'package:allergyguard/ui/onboarding/onboarding_screen.dart';
 
 /// Schermata impostazioni.
@@ -69,6 +71,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('Lettura automatica risultato'),
             value: _resultAutoPlayEnabled,
             onChanged: _toggleResultAutoPlay,
+          ),
+          const _SectionHeader('Community'),
+          ListTile(
+            leading: const Icon(Icons.favorite_outline, color: Colors.redAccent),
+            title: const Text('Lascia un feedback'),
+            subtitle: const Text(
+              'Aiutaci a migliorare: suggerimenti, bug, accuratezza',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const FeedbackScreen(),
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: const Text('Informazioni e privacy'),
+            subtitle: const Text('Versione, licenze, attribuzioni'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const AboutScreen(),
+              ),
+            ),
           ),
           const _SectionHeader('Privacy'),
           ListTile(
