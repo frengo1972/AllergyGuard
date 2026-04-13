@@ -10,6 +10,7 @@ import 'package:allergyguard/data/local/local_preferences_service.dart';
 import 'package:allergyguard/domain/models/scan_result.dart';
 import 'package:allergyguard/ui/common/app_colors.dart';
 import 'package:allergyguard/ui/common/disclaimer_widget.dart';
+import 'package:allergyguard/ui/feedback/feedback_screen.dart';
 
 /// Schermata risultato scansione.
 ///
@@ -95,6 +96,11 @@ class _ResultScreenState extends State<ResultScreen> {
             ],
             const SizedBox(height: 16),
             const DisclaimerWidget(),
+            if (widget.result.level == ScanResultLevel.danger ||
+                widget.result.level == ScanResultLevel.warning) ...[
+              const SizedBox(height: 12),
+              _buildFeedbackCta(),
+            ],
             const SizedBox(height: 16),
             _buildLabelAccordion(),
             const SizedBox(height: 16),
@@ -181,6 +187,48 @@ class _ResultScreenState extends State<ResultScreen> {
                   ),
                 )),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeedbackCta() {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.15),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: _openFeedback,
+        borderRadius: BorderRadius.circular(12),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Icon(Icons.rate_review_outlined, color: Colors.white),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Il risultato era sbagliato? Aiutaci a migliorare',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right, color: Colors.white),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openFeedback() async {
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => FeedbackScreen(
+          prefilledResultLevel: widget.result.level.name,
+          prefilledBarcode: widget.result.barcode,
+          prefilledAllergenKeys: widget.result.allergens,
         ),
       ),
     );
