@@ -3,10 +3,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// Servizio per caricare pattern candidati su Supabase
 /// e accodarli localmente per sync offline.
 class ContextUploadService {
-  final SupabaseClient _supabase;
 
   ContextUploadService({required SupabaseClient supabase})
       : _supabase = supabase;
+  final SupabaseClient _supabase;
 
   /// Carica un pattern candidato su Supabase.
   Future<void> upload({

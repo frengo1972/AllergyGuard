@@ -1,9 +1,12 @@
+import 'dart:io';
+import 'dart:ui';
+
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 
 /// Wrapper attorno a ML Kit Barcode Scanning.
 class BarcodeScannerService {
-  late final BarcodeScanner _scanner;
 
   BarcodeScannerService() {
     _scanner = BarcodeScanner(formats: [
@@ -14,11 +17,18 @@ class BarcodeScannerService {
       BarcodeFormat.qrCode,
     ]);
   }
+  late final BarcodeScanner _scanner;
 
   /// Scansiona un frame della camera per barcode.
   /// Ritorna il primo barcode trovato o null.
-  Future<String?> scanFromCamera(CameraImage image) async {
-    final inputImage = _convertCameraImage(image);
+  Future<String?> scanFromCamera(
+    CameraImage image, {
+    required InputImageRotation rotation,
+  }) async {
+    final inputImage = _convertCameraImage(
+      image,
+      rotation: rotation,
+    );
     if (inputImage == null) return null;
     return _scan(inputImage);
   }
@@ -34,9 +44,49 @@ class BarcodeScannerService {
     return barcodes.first.rawValue;
   }
 
-  InputImage? _convertCameraImage(CameraImage image) {
-    // TODO: Implementare conversione CameraImage -> InputImage
-    return null;
+  InputImage? _convertCameraImage(
+    CameraImage image, {
+    required InputImageRotation rotation,
+  }) {
+    final inputImageFormat = InputImageFormatValue.fromRawValue(
+      image.format.raw,
+    );
+    if (inputImageFormat == null) {
+      return null;
+    }
+
+    if (Platform.isAndroid &&
+        inputImageFormat != InputImageFormat.nv21 &&
+        inputImageFormat != InputImageFormat.yuv_420_888) {
+      return null;
+    }
+
+    if (Platform.isIOS &&
+        inputImageFormat != InputImageFormat.bgra8888 &&
+        inputImageFormat != InputImageFormat.yuv420) {
+      return null;
+    }
+
+    final bytes = _concatenatePlanes(image.planes);
+    final metadata = InputImageMetadata(
+      size: Size(image.width.toDouble(), image.height.toDouble()),
+      rotation: rotation,
+      format: inputImageFormat,
+      bytesPerRow: image.planes.first.bytesPerRow,
+    );
+
+    return InputImage.fromBytes(
+      bytes: bytes,
+      metadata: metadata,
+    );
+  }
+
+  Uint8List _concatenatePlanes(List<Plane> planes) {
+    final WriteBuffer allBytes = WriteBuffer();
+    for (final plane in planes) {
+      allBytes.putUint8List(plane.bytes);
+    }
+    return allBytes.done().buffer.asUint8List();
   }
 
   void dispose() {

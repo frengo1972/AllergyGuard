@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:allergyguard/data/local/local_scan_repository.dart';
 import 'package:allergyguard/domain/models/scan_result.dart';
 import 'package:allergyguard/ui/common/app_colors.dart';
 
@@ -16,8 +17,17 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
+  final LocalScanRepository _scanRepository = LocalScanRepository();
   ScanResultLevel? _filterLevel;
   String _searchQuery = '';
+  bool _isLoading = true;
+  List<ScanResult> _history = <ScanResult>[];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,8 +74,36 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildHistoryList() {
-    // TODO: Integrare con Riverpod provider e Drift DAO
-    return const Center(child: Text('Nessuna scansione'));
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final normalizedQuery = _searchQuery.trim().toLowerCase();
+    final filtered = _history.where((result) {
+      final matchesFilter =
+          _filterLevel == null || result.level == _filterLevel;
+      if (!matchesFilter) return false;
+      if (normalizedQuery.isEmpty) return true;
+
+      final haystacks = [
+        result.productName ?? '',
+        result.brand ?? '',
+        result.barcode ?? '',
+        result.ocrText,
+        ...result.allergens,
+      ].map((value) => value.toLowerCase());
+
+      return haystacks.any((value) => value.contains(normalizedQuery));
+    }).toList();
+
+    if (filtered.isEmpty) {
+      return const Center(child: Text('Nessuna scansione salvata'));
+    }
+
+    return ListView.builder(
+      itemCount: filtered.length,
+      itemBuilder: (context, index) => buildHistoryTile(filtered[index]),
+    );
   }
 
   Widget buildHistoryTile(ScanResult result) {
@@ -90,5 +128,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
         style: const TextStyle(fontSize: 12),
       ),
     );
+  }
+
+  Future<void> _loadHistory() async {
+    final history = await _scanRepository.getHistory();
+    if (!mounted) return;
+    setState(() {
+      _history = history;
+      _isLoading = false;
+    });
   }
 }

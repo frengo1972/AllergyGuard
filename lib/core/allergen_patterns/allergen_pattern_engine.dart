@@ -8,14 +8,13 @@ import 'package:allergyguard/domain/models/scan_result.dart';
 /// 3. Cerca nome allergene (in tutte le lingue) nel testo
 /// 4. Determina il livello di risultato
 class AllergenPatternEngine {
-  final List<ContextPattern> _verifiedPatterns;
-  final Map<String, List<String>> _allergenNames;
-
   AllergenPatternEngine({
     required List<ContextPattern> verifiedPatterns,
     required Map<String, List<String>> allergenNames,
   })  : _verifiedPatterns = verifiedPatterns,
         _allergenNames = allergenNames;
+  final List<ContextPattern> _verifiedPatterns;
+  final Map<String, List<String>> _allergenNames;
 
   ScanResult analyze({
     required String ocrText,
@@ -23,6 +22,7 @@ class AllergenPatternEngine {
   }) {
     final normalizedText = _normalize(ocrText);
     final foundAllergens = <String>[];
+    final matchedTerms = <String>[];
     var sectionFound = false;
 
     // Cerca sezione allergeni nel testo
@@ -42,8 +42,9 @@ class AllergenPatternEngine {
       for (final name in names) {
         final normalizedName = _normalize(name);
         if (normalizedName.isNotEmpty &&
-            normalizedText.contains(normalizedName)) {
+            _containsWholeTerm(normalizedText, normalizedName)) {
           foundAllergens.add(allergenKey);
+          matchedTerms.add(name);
           break;
         }
       }
@@ -52,6 +53,7 @@ class AllergenPatternEngine {
     return _determineResult(
       sectionFound: sectionFound,
       foundAllergens: foundAllergens,
+      matchedTerms: matchedTerms,
       ocrText: ocrText,
     );
   }
@@ -59,6 +61,7 @@ class AllergenPatternEngine {
   ScanResult _determineResult({
     required bool sectionFound,
     required List<String> foundAllergens,
+    required List<String> matchedTerms,
     required String ocrText,
   }) {
     if (sectionFound && foundAllergens.isNotEmpty) {
@@ -66,24 +69,28 @@ class AllergenPatternEngine {
         level: ScanResultLevel.danger,
         allergens: foundAllergens,
         ocrText: ocrText,
+        highlightTerms: matchedTerms,
       );
     } else if (foundAllergens.isNotEmpty) {
       return ScanResult(
         level: ScanResultLevel.warning,
         allergens: foundAllergens,
         ocrText: ocrText,
+        highlightTerms: matchedTerms,
       );
     } else if (sectionFound) {
       return ScanResult(
         level: ScanResultLevel.safe,
         allergens: [],
         ocrText: ocrText,
+        highlightTerms: const <String>[],
       );
     } else {
       return ScanResult(
         level: ScanResultLevel.unknown,
         allergens: [],
         ocrText: ocrText,
+        highlightTerms: const <String>[],
       );
     }
   }
@@ -94,28 +101,67 @@ class AllergenPatternEngine {
   }
 
   static final _accentMap = {
-    'à': 'a', 'á': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a',
-    'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
-    'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
-    'ò': 'o', 'ó': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o',
-    'ù': 'u', 'ú': 'u', 'û': 'u', 'ü': 'u',
-    'ñ': 'n', 'ç': 'c', 'ß': 'ss',
+    'à': 'a',
+    'á': 'a',
+    'â': 'a',
+    'ã': 'a',
+    'ä': 'a',
+    'è': 'e',
+    'é': 'e',
+    'ê': 'e',
+    'ë': 'e',
+    'ì': 'i',
+    'í': 'i',
+    'î': 'i',
+    'ï': 'i',
+    'ò': 'o',
+    'ó': 'o',
+    'ô': 'o',
+    'õ': 'o',
+    'ö': 'o',
+    'ù': 'u',
+    'ú': 'u',
+    'û': 'u',
+    'ü': 'u',
+    'ñ': 'n',
+    'ç': 'c',
+    'ß': 'ss',
   };
 
   String _removeAccents(String text) {
     return text.split('').map((c) => _accentMap[c] ?? c).join();
   }
+
+  bool _containsWholeTerm(String text, String term) {
+    var searchStart = 0;
+    while (true) {
+      final index = text.indexOf(term, searchStart);
+      if (index < 0) return false;
+
+      final beforeIndex = index - 1;
+      final afterIndex = index + term.length;
+      final isStartBoundary =
+          beforeIndex < 0 || !_isAsciiLetterOrDigit(text[beforeIndex]);
+      final isEndBoundary =
+          afterIndex >= text.length || !_isAsciiLetterOrDigit(text[afterIndex]);
+
+      if (isStartBoundary && isEndBoundary) {
+        return true;
+      }
+      searchStart = index + 1;
+    }
+  }
+
+  bool _isAsciiLetterOrDigit(String char) {
+    final codeUnit = char.codeUnitAt(0);
+    return (codeUnit >= 48 && codeUnit <= 57) ||
+        (codeUnit >= 65 && codeUnit <= 90) ||
+        (codeUnit >= 97 && codeUnit <= 122);
+  }
 }
 
 /// Modello per i pattern di contesto caricati dal JSON/Supabase.
 class ContextPattern {
-  final String id;
-  final String text;
-  final String language;
-  final String type; // 'contains' | 'may_contain' | 'facility'
-  final String status; // 'candidate' | 'verified'
-  final double confidence;
-
   const ContextPattern({
     required this.id,
     required this.text,
@@ -135,6 +181,12 @@ class ContextPattern {
       confidence: (json['confidence'] as num?)?.toDouble() ?? 0.0,
     );
   }
+  final String id;
+  final String text;
+  final String language;
+  final String type; // 'contains' | 'may_contain' | 'facility'
+  final String status; // 'candidate' | 'verified'
+  final double confidence;
 
   Map<String, dynamic> toJson() => {
         'id': id,

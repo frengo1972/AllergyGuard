@@ -3,6 +3,8 @@ import 'package:allergyguard/domain/models/product.dart';
 
 /// Client REST per Open Food Facts API.
 class OpenFoodFactsClient {
+
+  OpenFoodFactsClient({required Dio dio}) : _dio = dio;
   final Dio _dio;
 
   static const _baseUrl = 'https://world.openfoodfacts.org';
@@ -24,8 +26,6 @@ class OpenFoodFactsClient {
     'en:sulphites': 'sulphite',
     'en:lupin': 'lupin',
   };
-
-  OpenFoodFactsClient({required Dio dio}) : _dio = dio;
 
   /// Cerca un prodotto per barcode.
   Future<Product?> getByBarcode(String barcode) async {

@@ -3,9 +3,9 @@ import 'package:allergyguard/core/allergen_patterns/allergen_pattern_engine.dart
 
 /// Repository remoto per allergeni e pattern da Supabase.
 class AllergenRemoteRepository {
-  final SupabaseClient _client;
 
   AllergenRemoteRepository({required SupabaseClient client}) : _client = client;
+  final SupabaseClient _client;
 
   /// Scarica tutti i pattern verificati più recenti di una data versione.
   Future<List<ContextPattern>> getVerifiedPatterns({

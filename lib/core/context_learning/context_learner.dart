@@ -11,9 +11,6 @@ import 'package:allergyguard/core/context_learning/context_upload_service.dart';
 /// 2. Valida con Claude API (se confidence OCR >= 85%)
 /// 3. Carica su Supabase come candidato
 class ContextLearner {
-  final ContextExtractor _extractor;
-  final ClaudeValidator _validator;
-  final ContextUploadService _uploadService;
 
   ContextLearner({
     required ContextExtractor extractor,
@@ -22,6 +19,9 @@ class ContextLearner {
   })  : _extractor = extractor,
         _validator = validator,
         _uploadService = uploadService;
+  final ContextExtractor _extractor;
+  final ClaudeValidator _validator;
+  final ContextUploadService _uploadService;
 
   /// Esegue la pipeline di apprendimento in background.
   /// Non blocca la UI.

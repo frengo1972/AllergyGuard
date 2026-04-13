@@ -5,14 +5,14 @@ import 'package:allergyguard/core/constants.dart';
 /// Chiama Claude API per validare e tradurre nuovi pattern candidati.
 /// La chiamata è asincrona e non blocca la UI.
 class ClaudeValidator {
-  final Dio _dio;
-  final String _apiKey;
 
   ClaudeValidator({
     required Dio dio,
     required String apiKey,
   })  : _dio = dio,
         _apiKey = apiKey;
+  final Dio _dio;
+  final String _apiKey;
 
   /// Valida un frammento di testo estratto da un'etichetta.
   /// Ritorna null se la validazione fallisce.
@@ -59,12 +59,6 @@ class ClaudeValidator {
 }
 
 class ClaudeValidationResult {
-  final bool isValid;
-  final double confidence;
-  final String patternType;
-  final String detectedLanguage;
-  final Map<String, String> translations;
-  final String? rejectionReason;
 
   const ClaudeValidationResult({
     required this.isValid,
@@ -74,4 +68,10 @@ class ClaudeValidationResult {
     required this.translations,
     this.rejectionReason,
   });
+  final bool isValid;
+  final double confidence;
+  final String patternType;
+  final String detectedLanguage;
+  final Map<String, String> translations;
+  final String? rejectionReason;
 }

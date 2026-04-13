@@ -1,14 +1,5 @@
 /// Modello per i report della community su un prodotto.
 class ProductReport {
-  final int id;
-  final String barcode;
-  final String? productName;
-  final String? brand;
-  final int allergenId;
-  final String reportType; // 'contains' | 'may_contain' | 'safe'
-  final String deviceId;
-  final List<String> confirmedBy;
-  final DateTime createdAt;
 
   const ProductReport({
     required this.id,
@@ -21,4 +12,13 @@ class ProductReport {
     required this.confirmedBy,
     required this.createdAt,
   });
+  final int id;
+  final String barcode;
+  final String? productName;
+  final String? brand;
+  final int allergenId;
+  final String reportType; // 'contains' | 'may_contain' | 'safe'
+  final String deviceId;
+  final List<String> confirmedBy;
+  final DateTime createdAt;
 }

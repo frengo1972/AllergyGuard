@@ -1,10 +1,5 @@
 /// Modello allergene con traduzioni multilingua.
 class Allergen {
-  final int id;
-  final String nameKey;
-  final Map<String, String> names; // {'it': 'arachidi', 'en': 'peanuts', ...}
-  final String severity; // 'high' | 'medium' | 'low'
-  final bool euRegulated;
 
   const Allergen({
     required this.id,
@@ -13,14 +8,6 @@ class Allergen {
     this.severity = 'high',
     this.euRegulated = false,
   });
-
-  /// Restituisce il nome localizzato o il nameKey come fallback.
-  String localizedName(String languageCode) {
-    return names[languageCode] ?? names['en'] ?? nameKey;
-  }
-
-  /// Restituisce tutti i nomi in tutte le lingue (per pattern matching).
-  List<String> get allNames => names.values.toList();
 
   factory Allergen.fromJson(Map<String, dynamic> json) {
     return Allergen(
@@ -31,6 +18,19 @@ class Allergen {
       euRegulated: json['eu_regulated'] as bool? ?? false,
     );
   }
+  final int id;
+  final String nameKey;
+  final Map<String, String> names; // {'it': 'arachidi', 'en': 'peanuts', ...}
+  final String severity; // 'high' | 'medium' | 'low'
+  final bool euRegulated;
+
+  /// Restituisce il nome localizzato o il nameKey come fallback.
+  String localizedName(String languageCode) {
+    return names[languageCode] ?? names['en'] ?? nameKey;
+  }
+
+  /// Restituisce tutti i nomi in tutte le lingue (per pattern matching).
+  List<String> get allNames => names.values.toList();
 
   Map<String, dynamic> toJson() => {
         'id': id,

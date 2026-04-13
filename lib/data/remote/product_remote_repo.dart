@@ -2,9 +2,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Repository remoto per report prodotti e sync storico.
 class ProductRemoteRepository {
-  final SupabaseClient _client;
 
   ProductRemoteRepository({required SupabaseClient client}) : _client = client;
+  final SupabaseClient _client;
 
   /// Recupera i report community per un barcode.
   Future<List<Map<String, dynamic>>> getReportsForBarcode(

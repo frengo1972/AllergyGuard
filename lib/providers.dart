@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:allergyguard/core/allergen_patterns/allergen_pattern_engine.dart';
 import 'package:allergyguard/core/allergen_patterns/pattern_repository.dart';
 import 'package:allergyguard/core/allergen_patterns/context_extractor.dart';
 import 'package:allergyguard/core/ocr/ocr_service.dart';

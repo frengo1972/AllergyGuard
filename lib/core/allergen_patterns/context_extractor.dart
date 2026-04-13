@@ -45,10 +45,6 @@ class ContextExtractor {
 }
 
 class AllergenMatch {
-  final String allergenKey;
-  final String allergenName;
-  final int startIndex;
-  final int endIndex;
 
   const AllergenMatch({
     required this.allergenKey,
@@ -56,16 +52,20 @@ class AllergenMatch {
     required this.startIndex,
     required this.endIndex,
   });
+  final String allergenKey;
+  final String allergenName;
+  final int startIndex;
+  final int endIndex;
 }
 
 class ExtractedContext {
-  final String text;
-  final String sourceOcrText;
-  final String allergenKey;
 
   const ExtractedContext({
     required this.text,
     required this.sourceOcrText,
     required this.allergenKey,
   });
+  final String text;
+  final String sourceOcrText;
+  final String allergenKey;
 }

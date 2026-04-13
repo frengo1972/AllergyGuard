@@ -6,18 +6,24 @@ import 'ocr_service.dart';
 /// Implementazione OCR cloud con Google Cloud Vision API.
 /// Usato come fallback quando ML Kit ha confidence < 60%.
 class CloudVisionOcr {
-  final Dio _dio;
-  final String _apiKey;
 
   CloudVisionOcr({
     required Dio dio,
     required String apiKey,
   })  : _dio = dio,
         _apiKey = apiKey;
+  final Dio _dio;
+  final String _apiKey;
+
+  bool get isConfigured => _apiKey.trim().isNotEmpty;
 
   Future<OcrResult> processImage(CameraImage image) async {
     // TODO: Convertire CameraImage in base64 per l'API
-    return const OcrResult(text: '', confidence: 0.0, source: OcrSource.cloudVision);
+    return const OcrResult(
+      text: '',
+      confidence: 0.0,
+      source: OcrSource.cloudVision,
+    );
   }
 
   Future<OcrResult> processFile(String filePath) async {

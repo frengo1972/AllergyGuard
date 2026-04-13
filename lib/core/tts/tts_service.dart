@@ -14,7 +14,6 @@ class TtsService {
   }
 
   Future<void> setLanguage(String languageCode) async {
-    // Mappa codice lingua → locale TTS
     final localeMap = {
       'it': 'it-IT',
       'en': 'en-US',
@@ -42,7 +41,6 @@ class TtsService {
     await _tts.setSpeechRate(speed.rate);
   }
 
-  /// Annuncia il risultato della scansione.
   Future<void> announceResult(ScanResult result, {String locale = 'it'}) async {
     final message = _buildMessage(result, locale);
     await _tts.speak(message);
@@ -51,16 +49,63 @@ class TtsService {
   String _buildMessage(ScanResult result, String locale) {
     final allergenList = result.allergens.join(', ');
 
-    // TODO: Localizzare i messaggi per tutte le lingue supportate
-    switch (result.level) {
-      case ScanResultLevel.danger:
-        return 'Pericolo! Il prodotto contiene $allergenList. Non consumare.';
-      case ScanResultLevel.warning:
-        return 'Attenzione. Possibile presenza di $allergenList. Verificare l\'etichetta.';
-      case ScanResultLevel.safe:
-        return 'Prodotto apparentemente sicuro. Nessun allergene rilevato nella sezione dichiarata.';
-      case ScanResultLevel.unknown:
-        return 'Impossibile verificare. La sezione allergeni non è stata rilevata sull\'etichetta.';
+    switch (locale) {
+      case 'en':
+        return switch (result.level) {
+          ScanResultLevel.danger =>
+            'Danger! This product contains $allergenList. Do not consume it.',
+          ScanResultLevel.warning =>
+            'Warning. Possible presence of $allergenList. Please check the label carefully.',
+          ScanResultLevel.safe =>
+            'Apparently safe. No allergen was detected in the declared allergen section.',
+          ScanResultLevel.unknown =>
+            'Unable to verify. The allergen section was not detected on the label.',
+        };
+      case 'de':
+        return switch (result.level) {
+          ScanResultLevel.danger =>
+            'Gefahr! Dieses Produkt enthaelt $allergenList. Bitte nicht verzehren.',
+          ScanResultLevel.warning =>
+            'Achtung. Moegliche Spuren von $allergenList. Bitte Etikett pruefen.',
+          ScanResultLevel.safe =>
+            'Anscheinend sicher. Kein Allergen im deklarierten Allergenabschnitt erkannt.',
+          ScanResultLevel.unknown =>
+            'Keine sichere Pruefung moeglich. Der Allergenabschnitt wurde nicht erkannt.',
+        };
+      case 'fr':
+        return switch (result.level) {
+          ScanResultLevel.danger =>
+            'Danger! Ce produit contient $allergenList. Ne le consommez pas.',
+          ScanResultLevel.warning =>
+            'Attention. Presence possible de $allergenList. Verifiez bien l etiquette.',
+          ScanResultLevel.safe =>
+            'Apparemment sur. Aucun allergene detecte dans la section declaree.',
+          ScanResultLevel.unknown =>
+            'Verification impossible. La section allergenes n a pas ete detectee.',
+        };
+      case 'es':
+        return switch (result.level) {
+          ScanResultLevel.danger =>
+            'Peligro. Este producto contiene $allergenList. No lo consumas.',
+          ScanResultLevel.warning =>
+            'Atencion. Posible presencia de $allergenList. Revisa la etiqueta.',
+          ScanResultLevel.safe =>
+            'Aparentemente seguro. No se detectaron alergenos en la seccion declarada.',
+          ScanResultLevel.unknown =>
+            'No se puede verificar. No se detecto la seccion de alergenos.',
+        };
+      case 'it':
+      default:
+        return switch (result.level) {
+          ScanResultLevel.danger =>
+            'Pericolo! Il prodotto contiene $allergenList. Non consumare.',
+          ScanResultLevel.warning =>
+            'Attenzione. Possibile presenza di $allergenList. Verificare l etichetta.',
+          ScanResultLevel.safe =>
+            'Prodotto apparentemente sicuro. Nessun allergene rilevato nella sezione dichiarata.',
+          ScanResultLevel.unknown =>
+            'Impossibile verificare. La sezione allergeni non e stata rilevata sull etichetta.',
+        };
     }
   }
 
@@ -78,6 +123,6 @@ enum TtsSpeed {
   normal(0.5),
   fast(0.7);
 
-  final double rate;
   const TtsSpeed(this.rate);
+  final double rate;
 }
