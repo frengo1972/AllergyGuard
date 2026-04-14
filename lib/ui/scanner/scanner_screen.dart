@@ -36,6 +36,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   bool _isAnalysisStreamActive = false;
   bool _isLoadingScannerConfig = true;
   bool _isPresentingResult = false;
+  bool _hasCameraPermissionIssue = false;
   String? _cameraError;
   String? _lastBarcode;
   String? _lastOcrSignature;
@@ -50,7 +51,10 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   void initState() {
     super.initState();
     _loadScannerConfig();
-    _initializeCamera();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _initializeCamera();
+    });
   }
 
   @override
@@ -149,7 +153,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                 onPressed: _initializeCamera,
                 child: const Text('Riprova'),
               ),
-              if (_cameraError?.contains('permesso') ?? false) ...[
+              if (_hasCameraPermissionIssue) ...[
                 const SizedBox(height: 12),
                 const TextButton(
                   onPressed: openAppSettings,
@@ -290,6 +294,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   Future<void> _initializeCamera() async {
     setState(() {
       _isInitializingCamera = true;
+      _hasCameraPermissionIssue = false;
       _cameraError = null;
     });
 
@@ -298,6 +303,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       if (!mounted) return;
       setState(() {
         _isInitializingCamera = false;
+        _hasCameraPermissionIssue = true;
         _cameraError = permission.isPermanentlyDenied
             ? 'Il permesso fotocamera e negato in modo permanente.'
             : 'Serve il permesso fotocamera per usare lo scanner.';
@@ -310,6 +316,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       if (!mounted) return;
       setState(() {
         _isInitializingCamera = false;
+        _hasCameraPermissionIssue = false;
         if (!_cameraController.isInitialized) {
           _cameraError = 'Nessuna fotocamera disponibile sul dispositivo.';
         }
@@ -319,6 +326,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       if (!mounted) return;
       setState(() {
         _isInitializingCamera = false;
+        _hasCameraPermissionIssue = false;
         _cameraError = 'Impossibile inizializzare la fotocamera: $error';
       });
     }
@@ -376,6 +384,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       if (!mounted) return;
       setState(() {
         _isAnalysisStreamActive = false;
+        _hasCameraPermissionIssue = false;
         _cameraError = 'Errore scanner automatico: $error';
       });
     }
