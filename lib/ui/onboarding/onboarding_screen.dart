@@ -1,24 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:allergyguard/core/locale/locale_provider.dart';
 import 'package:allergyguard/data/local/local_allergen_repository.dart';
 import 'package:allergyguard/data/local/local_preferences_service.dart';
 import 'package:allergyguard/domain/models/allergen.dart';
+import 'package:allergyguard/l10n/app_localizations.dart';
 import 'package:allergyguard/ui/common/visual_metadata.dart';
 import 'package:allergyguard/ui/common/disclaimer_widget.dart';
 import 'package:allergyguard/ui/scanner/scanner_screen.dart';
 
-/// Schermata di onboarding (primo avvio).
-///
-/// Flusso:
-/// 1. Selezione lingua interfaccia
-/// 2. Selezione allergeni (14 EU + personalizzati)
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final LocalPreferencesService _preferences = LocalPreferencesService();
   final LocalAllergenRepository _allergenRepository = LocalAllergenRepository();
   final PageController _pageController = PageController();
@@ -64,6 +62,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (_isLoadingPreferences) {
       return const Center(child: CircularProgressIndicator());
     }
+    final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -71,18 +70,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Scegli la lingua',
+            l10n.onboardingChooseLanguageTitle,
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: 8),
           Text(
-            'AllergyGuard ti guidera subito nella configurazione iniziale.',
+            l10n.onboardingChooseLanguageIntro,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 12),
           Text(
-            'Questa scelta viene usata per i nomi degli allergeni e per le '
-            'preferenze dell\'app.',
+            l10n.onboardingChooseLanguageHint,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 16),
@@ -94,6 +92,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               onChanged: (value) {
                 if (value == null) return;
                 setState(() => _languageCode = value);
+                ref
+                    .read(localeControllerProvider.notifier)
+                    .setLanguage(value);
               },
               child: ListView(
                 children:
@@ -120,6 +121,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (_isLoadingPreferences) {
       return const Center(child: CircularProgressIndicator());
     }
+    final l10n = AppLocalizations.of(context);
 
     final sortedAllergens = <Allergen>[..._allergens]..sort((left, right) {
         final leftSelected = _selectedAllergenKeys.contains(left.nameKey);
@@ -138,15 +140,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Seleziona i tuoi allergeni',
+            l10n.onboardingAllergensTitle,
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: 12),
           Text(
             _selectedAllergenKeys.isEmpty
-                ? 'Puoi iniziare senza selezioni, ma scegliendo gli allergeni '
-                    'l\'app potra evidenziarli meglio.'
-                : '${_selectedAllergenKeys.length} allergeni selezionati',
+                ? l10n.onboardingAllergensEmptyHint
+                : l10n.onboardingAllergensSelectedCount(
+                    _selectedAllergenKeys.length,
+                  ),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
@@ -166,8 +169,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   title: Text(allergen.localizedName(_languageCode)),
                   subtitle: Text(
                     allergen.euRegulated
-                        ? 'Allergene UE regolamentato'
-                        : 'Allergene personalizzato',
+                        ? l10n.onboardingAllergenEuRegulated
+                        : l10n.onboardingAllergenCustom,
                   ),
                   onChanged: (value) {
                     setState(() {
@@ -188,6 +191,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildNavigationButtons() {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -199,7 +203,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
               ),
-              child: const Text('Indietro'),
+              child: Text(l10n.commonBack),
             )
           else
             const SizedBox.shrink(),
@@ -216,7 +220,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       _completeOnboarding();
                     }
                   },
-            child: Text(_currentPage < 1 ? 'Avanti' : 'Inizia'),
+            child: Text(
+              _currentPage < 1 ? l10n.commonNext : l10n.commonStart,
+            ),
           ),
         ],
       ),

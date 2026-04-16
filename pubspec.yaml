@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # State Management
   flutter_riverpod: ^2.5.0
@@ -36,7 +38,7 @@ dependencies:
   shared_preferences: ^2.2.0
   permission_handler: ^11.3.0
   uuid: ^4.3.0
-  intl: ^0.19.0
+  intl: ^0.20.2
   json_annotation: ^4.8.0
   equatable: ^2.0.5
   flutter_dotenv: ^5.1.0
@@ -60,6 +62,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
   assets:
     - .env
     - assets/allergens/
@@ -69,8 +72,8 @@ flutter_launcher_icons:
   android: true
   ios: false
   image_path: "assets/branding/logo.png"
-  adaptive_icon_background: "#1976D2"
-  adaptive_icon_foreground: "assets/branding/logo.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/branding/logo_foreground.png"
   min_sdk_android: 21
 
 flutter_native_splash:

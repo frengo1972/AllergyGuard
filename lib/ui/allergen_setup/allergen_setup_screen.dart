@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:allergyguard/data/local/local_allergen_repository.dart';
 import 'package:allergyguard/data/local/local_preferences_service.dart';
 import 'package:allergyguard/domain/models/allergen.dart';
+import 'package:allergyguard/l10n/app_localizations.dart';
 import 'package:allergyguard/ui/common/visual_metadata.dart';
 
 /// Schermata gestione allergeni.
@@ -34,19 +35,20 @@ class _AllergenSetupScreenState extends State<AllergenSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('I miei allergeni'),
+        title: Text(l10n.allergenSetupTitle),
       ),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(8),
             child: TextField(
-              decoration: const InputDecoration(
-                hintText: 'Cerca allergene...',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                hintText: l10n.allergenSetupSearchHint,
+                prefixIcon: const Icon(Icons.search),
+                border: const OutlineInputBorder(),
               ),
               onChanged: (q) => setState(() => _searchQuery = q),
             ),
@@ -59,7 +61,7 @@ class _AllergenSetupScreenState extends State<AllergenSetupScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddCustomAllergenDialog,
         icon: const Icon(Icons.add),
-        label: const Text('Aggiungi'),
+        label: Text(l10n.allergenSetupAddButton),
       ),
     );
   }
@@ -69,6 +71,7 @@ class _AllergenSetupScreenState extends State<AllergenSetupScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    final l10n = AppLocalizations.of(context);
     final normalizedQuery = _searchQuery.trim().toLowerCase();
     final filtered = _allergens.where((allergen) {
       if (normalizedQuery.isEmpty) return true;
@@ -88,7 +91,7 @@ class _AllergenSetupScreenState extends State<AllergenSetupScreen> {
       });
 
     if (filtered.isEmpty) {
-      return const Center(child: Text('Nessun allergene trovato'));
+      return Center(child: Text(l10n.allergenSetupEmpty));
     }
 
     return ListView.builder(
@@ -108,8 +111,8 @@ class _AllergenSetupScreenState extends State<AllergenSetupScreen> {
           title: Text(allergen.localizedName(_languageCode)),
           subtitle: Text(
             allergen.euRegulated
-                ? 'Allergene UE regolamentato'
-                : 'Allergene personalizzato',
+                ? l10n.onboardingAllergenEuRegulated
+                : l10n.onboardingAllergenCustom,
           ),
           onChanged: (value) => _toggleAllergen(allergen.nameKey, value),
         );
@@ -118,23 +121,24 @@ class _AllergenSetupScreenState extends State<AllergenSetupScreen> {
   }
 
   void _showAddCustomAllergenDialog() {
+    final l10n = AppLocalizations.of(context);
     final controller = TextEditingController();
     showDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Aggiungi allergene personalizzato'),
+          title: Text(l10n.allergenSetupAddCustom),
           content: TextField(
             controller: controller,
-            decoration: const InputDecoration(
-              hintText: 'Nome allergene',
+            decoration: InputDecoration(
+              hintText: l10n.allergenSetupNameHint,
             ),
             autofocus: true,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Annulla'),
+              child: Text(l10n.commonCancel),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -173,10 +177,12 @@ class _AllergenSetupScreenState extends State<AllergenSetupScreen> {
                 await _loadState();
                 if (!mounted) return;
                 scaffoldMessenger.showSnackBar(
-                  SnackBar(content: Text('"$name" aggiunto alla lista')),
+                  SnackBar(
+                    content: Text(l10n.allergenSetupAddedToList(name)),
+                  ),
                 );
               },
-              child: const Text('Aggiungi'),
+              child: Text(l10n.allergenSetupAddButton),
             ),
           ],
         );

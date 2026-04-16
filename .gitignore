@@ -41,3 +41,11 @@ macos/Flutter/Flutter-Release.xcconfig
 *.swo
 .DS_Store
 Thumbs.db
+
+# Local debug artifacts
+flutter_*.log
+screenshots/
+
+# Branding drafts
+assets/branding/Gemini_Generated_Image_*.png
+assets/branding/immagine in primo piano.png

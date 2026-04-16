@@ -1,31 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:allergyguard/core/locale/locale_provider.dart';
 import 'package:allergyguard/core/tts/tts_service.dart';
 import 'package:allergyguard/data/local/local_preferences_service.dart';
+import 'package:allergyguard/l10n/app_localizations.dart';
 import 'package:allergyguard/ui/common/visual_metadata.dart';
 import 'package:allergyguard/ui/about/about_screen.dart';
 import 'package:allergyguard/ui/allergen_setup/allergen_setup_screen.dart';
 import 'package:allergyguard/ui/feedback/feedback_screen.dart';
 import 'package:allergyguard/ui/onboarding/onboarding_screen.dart';
 
-/// Schermata impostazioni.
-///
-/// - Gestione allergeni
-/// - Velocita TTS (lento/normale/veloce)
-/// - Auto-play TTS on/off
-/// - Reset onboarding
-/// - Eliminazione dati locali
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final LocalPreferencesService _preferences = LocalPreferencesService();
   String _languageCode = 'it';
   TtsSpeed _ttsSpeed = TtsSpeed.normal;
   bool _resultAutoPlayEnabled = true;
+  bool _communityLearningEnabled = true;
 
   @override
   void initState() {
@@ -35,14 +32,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Impostazioni')),
+      appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: ListView(
         children: [
-          const _SectionHeader('Allergeni'),
+          _SectionHeader(l10n.settingsSectionAllergens),
           ListTile(
             leading: const Icon(Icons.warning_amber),
-            title: const Text('Gestisci allergeni'),
+            title: Text(l10n.settingsManageAllergens),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -50,35 +48,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ),
-          const _SectionHeader('Accessibilita'),
+          _SectionHeader(l10n.settingsSectionAccessibility),
           ListTile(
             leading: Text(
               languageFlagForCode(_languageCode),
               style: const TextStyle(fontSize: 24),
             ),
-            title: const Text('Lingua interfaccia'),
+            title: Text(l10n.settingsLanguage),
             subtitle: Text(languageLabelForCode(_languageCode)),
             onTap: _showLanguagePicker,
           ),
           ListTile(
             leading: const Icon(Icons.speed),
-            title: const Text('Velocita lettura'),
-            subtitle: Text(_ttsSpeedLabel(_ttsSpeed)),
+            title: Text(l10n.settingsTtsSpeed),
+            subtitle: Text(_ttsSpeedLabel(_ttsSpeed, l10n)),
             onTap: _showTtsSpeedPicker,
           ),
           SwitchListTile(
             secondary: const Icon(Icons.volume_up),
-            title: const Text('Lettura automatica risultato'),
+            title: Text(l10n.settingsAutoPlay),
             value: _resultAutoPlayEnabled,
             onChanged: _toggleResultAutoPlay,
           ),
-          const _SectionHeader('Community'),
+          _SectionHeader(l10n.settingsSectionCommunity),
           ListTile(
-            leading: const Icon(Icons.favorite_outline, color: Colors.redAccent),
-            title: const Text('Lascia un feedback'),
-            subtitle: const Text(
-              'Aiutaci a migliorare: suggerimenti, bug, accuratezza',
-            ),
+            leading:
+                const Icon(Icons.favorite_outline, color: Colors.redAccent),
+            title: Text(l10n.settingsLeaveFeedback),
+            subtitle: Text(l10n.settingsLeaveFeedbackSubtitle),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -88,8 +85,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ListTile(
             leading: const Icon(Icons.info_outline),
-            title: const Text('Informazioni e privacy'),
-            subtitle: const Text('Versione, licenze, attribuzioni'),
+            title: Text(l10n.settingsAboutAndPrivacy),
+            subtitle: Text(l10n.settingsAboutAndPrivacySubtitle),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -97,24 +94,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ),
-          const _SectionHeader('Privacy'),
+          SwitchListTile(
+            secondary: const Icon(Icons.group_outlined),
+            title: Text(l10n.settingsCommunityLearning),
+            subtitle: Text(l10n.settingsCommunityLearningSubtitle),
+            value: _communityLearningEnabled,
+            onChanged: _toggleCommunityLearning,
+          ),
+          _SectionHeader(l10n.settingsSectionPrivacy),
           ListTile(
             leading: const Icon(Icons.restart_alt),
-            title: const Text('Ripeti onboarding'),
-            subtitle: const Text(
-              'Riporta l\'app alla scelta lingua e allergeni',
-            ),
+            title: Text(l10n.settingsRepeatOnboarding),
+            subtitle: Text(l10n.settingsRepeatOnboardingSubtitle),
             onTap: _resetOnboarding,
           ),
           ListTile(
             leading: const Icon(Icons.delete_forever, color: Colors.red),
-            title: const Text(
-              'Elimina dati locali',
-              style: TextStyle(color: Colors.red),
+            title: Text(
+              l10n.settingsClearLocalData,
+              style: const TextStyle(color: Colors.red),
             ),
-            subtitle: const Text(
-              'Rimuove preferenze, onboarding e allergeni personalizzati',
-            ),
+            subtitle: Text(l10n.settingsClearLocalDataSubtitle),
             onTap: _clearLocalData,
           ),
         ],
@@ -126,6 +126,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final languageCode = await _preferences.getInterfaceLanguage();
     final speedName = await _preferences.getTtsSpeedName();
     final autoPlayEnabled = await _preferences.isResultAutoPlayEnabled();
+    final communityLearningEnabled =
+        await _preferences.isCommunityLearningEnabled();
     final speed = TtsSpeed.values.firstWhere(
       (value) => value.name == speedName,
       orElse: () => TtsSpeed.normal,
@@ -135,6 +137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _languageCode = languageCode;
       _ttsSpeed = speed;
       _resultAutoPlayEnabled = autoPlayEnabled;
+      _communityLearningEnabled = communityLearningEnabled;
     });
   }
 
@@ -164,12 +167,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (selected == null || selected == _languageCode) return;
-    await _preferences.setInterfaceLanguage(selected);
+    await ref.read(localeControllerProvider.notifier).setLanguage(selected);
     if (!mounted) return;
     setState(() => _languageCode = selected);
   }
 
   Future<void> _showTtsSpeedPicker() async {
+    final l10n = AppLocalizations.of(context);
     final selected = await showModalBottomSheet<TtsSpeed>(
       context: context,
       builder: (context) {
@@ -181,7 +185,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 leading: Icon(
                   speed == _ttsSpeed ? Icons.check_circle : Icons.speed,
                 ),
-                title: Text(_ttsSpeedLabel(speed)),
+                title: Text(_ttsSpeedLabel(speed, l10n)),
                 onTap: () => Navigator.pop(context, speed),
               );
             }).toList(),
@@ -202,23 +206,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _resultAutoPlayEnabled = value);
   }
 
+  Future<void> _toggleCommunityLearning(bool value) async {
+    await _preferences.setCommunityLearningEnabled(value);
+    if (!mounted) return;
+    setState(() => _communityLearningEnabled = value);
+  }
+
   Future<void> _resetOnboarding() async {
+    final l10n = AppLocalizations.of(context);
     final shouldReset = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Ripetere onboarding?'),
-          content: const Text(
-            'Ti verra richiesto di scegliere di nuovo lingua e allergeni.',
-          ),
+          title: Text(l10n.settingsRepeatOnboardingDialogTitle),
+          content: Text(l10n.settingsRepeatOnboardingDialogBody),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Annulla'),
+              child: Text(l10n.commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Ripeti'),
+              child: Text(l10n.commonRepeat),
             ),
           ],
         );
@@ -239,22 +248,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _clearLocalData() async {
+    final l10n = AppLocalizations.of(context);
     final shouldClear = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Eliminare i dati locali?'),
-          content: const Text(
-            'Verranno rimossi onboarding, lingua, allergeni selezionati e allergeni personalizzati.',
-          ),
+          title: Text(l10n.settingsClearDialogTitle),
+          content: Text(l10n.settingsClearDialogBody),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Annulla'),
+              child: Text(l10n.commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Elimina'),
+              child: Text(l10n.commonDelete),
             ),
           ],
         );
@@ -273,11 +281,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  String _ttsSpeedLabel(TtsSpeed speed) {
+  String _ttsSpeedLabel(TtsSpeed speed, AppLocalizations l10n) {
     return switch (speed) {
-      TtsSpeed.slow => 'Lenta',
-      TtsSpeed.normal => 'Normale',
-      TtsSpeed.fast => 'Veloce',
+      TtsSpeed.slow => l10n.settingsTtsSpeedSlow,
+      TtsSpeed.normal => l10n.settingsTtsSpeedNormal,
+      TtsSpeed.fast => l10n.settingsTtsSpeedFast,
     };
   }
 }
