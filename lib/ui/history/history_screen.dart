@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:allergyguard/data/local/local_scan_repository.dart';
 import 'package:allergyguard/domain/models/scan_result.dart';
+import 'package:allergyguard/l10n/app_localizations.dart';
 import 'package:allergyguard/ui/common/app_colors.dart';
 
-/// Schermata storico scansioni.
-///
-/// - Lista cronologica con nome prodotto, risultato, data
-/// - Filtro per livello risultato
-/// - Ricerca per nome prodotto
-/// - Badge colorato per risultato
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
@@ -31,23 +26,32 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Storico Scansioni'),
+        title: Text(l10n.historyTitle),
         actions: [
           PopupMenuButton<ScanResultLevel?>(
             icon: const Icon(Icons.filter_list),
             onSelected: (level) => setState(() => _filterLevel = level),
             itemBuilder: (_) => [
-              const PopupMenuItem(value: null, child: Text('Tutti')),
-              const PopupMenuItem(
-                  value: ScanResultLevel.danger, child: Text('Pericolo')),
-              const PopupMenuItem(
-                  value: ScanResultLevel.warning, child: Text('Attenzione')),
-              const PopupMenuItem(
-                  value: ScanResultLevel.safe, child: Text('Sicuro')),
-              const PopupMenuItem(
-                  value: ScanResultLevel.unknown, child: Text('Sconosciuto')),
+              PopupMenuItem(value: null, child: Text(l10n.historyFilterAll)),
+              PopupMenuItem(
+                value: ScanResultLevel.danger,
+                child: Text(l10n.historyFilterDanger),
+              ),
+              PopupMenuItem(
+                value: ScanResultLevel.warning,
+                child: Text(l10n.historyFilterWarning),
+              ),
+              PopupMenuItem(
+                value: ScanResultLevel.safe,
+                child: Text(l10n.historyFilterSafe),
+              ),
+              PopupMenuItem(
+                value: ScanResultLevel.unknown,
+                child: Text(l10n.historyFilterUnknown),
+              ),
             ],
           ),
         ],
@@ -57,10 +61,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Padding(
             padding: const EdgeInsets.all(8),
             child: TextField(
-              decoration: const InputDecoration(
-                hintText: 'Cerca prodotto...',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                hintText: l10n.historySearchHint,
+                prefixIcon: const Icon(Icons.search),
+                border: const OutlineInputBorder(),
               ),
               onChanged: (q) => setState(() => _searchQuery = q),
             ),
@@ -78,6 +82,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    final l10n = AppLocalizations.of(context);
     final normalizedQuery = _searchQuery.trim().toLowerCase();
     final filtered = _history.where((result) {
       final matchesFilter =
@@ -97,7 +102,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }).toList();
 
     if (filtered.isEmpty) {
-      return const Center(child: Text('Nessuna scansione salvata'));
+      return Center(child: Text(l10n.historyEmpty));
     }
 
     return ListView.builder(
@@ -107,6 +112,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget buildHistoryTile(ScanResult result) {
+    final l10n = AppLocalizations.of(context);
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: AppColors.forResult(result.level),
@@ -121,7 +127,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           size: 20,
         ),
       ),
-      title: Text(result.productName ?? 'Prodotto sconosciuto'),
+      title: Text(result.productName ?? l10n.historyUnknownProduct),
       subtitle: Text(result.barcode ?? 'OCR'),
       trailing: Text(
         '${result.scannedAt.day}/${result.scannedAt.month}/${result.scannedAt.year}',

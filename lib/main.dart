@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:allergyguard/core/locale/locale_provider.dart';
+import 'package:allergyguard/l10n/app_localizations.dart';
+import 'package:allergyguard/providers.dart';
 import 'package:allergyguard/ui/onboarding/onboarding_screen.dart';
 import 'package:allergyguard/ui/scanner/scanner_screen.dart';
 
@@ -21,7 +24,7 @@ Future<void> main() async {
       );
     } else {
       debugPrint(
-        'Supabase non configurato: avvio in modalita locale senza backend.',
+        'Supabase not configured: starting in local-only mode without backend.',
       );
     }
 
@@ -41,19 +44,23 @@ bool _hasUsableSupabaseConfig(String? url, String? anonKey) {
   return true;
 }
 
-class AllergyGuardApp extends StatelessWidget {
+class AllergyGuardApp extends ConsumerWidget {
   const AllergyGuardApp({super.key});
 
   static const _seed = Color(0xFF1976D2);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeControllerProvider);
     return MaterialApp(
       title: 'AllergyGuard',
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.system,
       theme: _buildTheme(Brightness.light),
       darkTheme: _buildTheme(Brightness.dark),
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: const _AppEntryPoint(),
     );
   }
@@ -134,35 +141,54 @@ class BootstrapErrorApp extends StatelessWidget {
     return MaterialApp(
       title: 'AllergyGuard',
       debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        appBar: AppBar(title: const Text('Errore di avvio')),
-        body: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'L\'app non e riuscita ad avviarsi correttamente.',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Builder(
+        builder: (context) {
+          final l10n = AppLocalizations.of(context);
+          return Scaffold(
+            appBar: AppBar(title: Text(l10n.bootstrapErrorTitle)),
+            body: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.bootstrapErrorMessage,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(l10n.bootstrapErrorHint),
+                  const SizedBox(height: 24),
+                  SelectableText(message),
+                ],
               ),
-              const SizedBox(height: 12),
-              const Text(
-                'Controlla il file .env e ricompila l\'app se hai appena '
-                'modificato la configurazione.',
-              ),
-              const SizedBox(height: 24),
-              SelectableText(message),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
 }
 
-/// Decide se mostrare l'onboarding o la schermata scanner.
-class _AppEntryPoint extends StatelessWidget {
+class _AppEntryPoint extends ConsumerStatefulWidget {
   const _AppEntryPoint();
+
+  @override
+  ConsumerState<_AppEntryPoint> createState() => _AppEntryPointState();
+}
+
+class _AppEntryPointState extends ConsumerState<_AppEntryPoint> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(feedbackSubmissionServiceProvider).flushPending();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

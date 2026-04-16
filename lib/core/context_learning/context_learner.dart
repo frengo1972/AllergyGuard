@@ -31,7 +31,9 @@ class ContextLearner {
     required List<AllergenMatch> matches,
     required Set<String> existingPatterns,
     required String deviceId,
+    bool communityLearningEnabled = true,
   }) async {
+    if (!communityLearningEnabled) return;
     // Soglia pre-invio: OCR confidence >= 85%
     if (ocrConfidence < AppConstants.contextMinConfidence) return;
 

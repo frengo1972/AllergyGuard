@@ -9,6 +9,7 @@ import 'package:allergyguard/core/ocr/cloud_vision_ocr.dart';
 import 'package:allergyguard/core/scanner/barcode_scanner.dart';
 import 'package:allergyguard/core/scanner/open_food_facts_client.dart';
 import 'package:allergyguard/core/tts/tts_service.dart';
+import 'package:allergyguard/data/feedback/feedback_submission_service.dart';
 import 'package:allergyguard/data/remote/allergen_remote_repo.dart';
 import 'package:allergyguard/data/remote/feedback_remote_repo.dart';
 
@@ -74,4 +75,12 @@ final allergenRemoteRepoProvider = Provider<AllergenRemoteRepository>((ref) {
 /// Provider Feedback Remote Repository (accetta backend opzionale).
 final feedbackRemoteRepoProvider = Provider<FeedbackRemoteRepository>((ref) {
   return FeedbackRemoteRepository(client: ref.watch(optionalSupabaseProvider));
+});
+
+/// Provider servizio invio/queue feedback.
+final feedbackSubmissionServiceProvider =
+    Provider<FeedbackSubmissionService>((ref) {
+  return FeedbackSubmissionService(
+    remoteRepository: ref.watch(feedbackRemoteRepoProvider),
+  );
 });
