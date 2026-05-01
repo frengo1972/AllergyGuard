@@ -1,0 +1,22 @@
+name: Supabase keepalive
+
+on:
+  schedule:
+    - cron: '0 8 */2 * *'   # every 2 days at 08:00 UTC
+  workflow_dispatch:          # manual trigger for testing
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/app_datasets?select=version&dataset_name=eq.allergens" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+          echo "HTTP status: $STATUS"
+          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
+            echo "Ping failed with status $STATUS"
+            exit 1
+          fi
