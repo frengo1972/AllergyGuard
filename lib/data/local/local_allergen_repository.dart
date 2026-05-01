@@ -165,12 +165,20 @@ class LocalAllergenRepository implements AllergenRepository {
         errorMessage: error.message,
       );
     } catch (error) {
+      final raw = error.toString();
+      final isNetworkError = raw.contains('SocketException') ||
+          raw.contains('ClientException') ||
+          raw.contains('Failed host lookup') ||
+          raw.contains('Connection refused') ||
+          raw.contains('Connection timed out');
       return AllergenSyncResult(
         success: false,
         updated: false,
         remoteAvailable: true,
         localVersion: effectiveLocalVersion,
-        errorMessage: error.toString(),
+        errorMessage: isNetworkError
+            ? 'Server non raggiungibile. Verifica la connessione o riprova più tardi.'
+            : raw,
       );
     }
   }
