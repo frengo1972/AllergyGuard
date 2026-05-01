@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:allergyguard/core/locale/locale_provider.dart';
 import 'package:allergyguard/core/tts/tts_service.dart';
+import 'package:allergyguard/data/local/local_allergen_repository.dart';
 import 'package:allergyguard/data/local/local_preferences_service.dart';
+import 'package:allergyguard/domain/models/allergen_dataset.dart';
 import 'package:allergyguard/l10n/app_localizations.dart';
 import 'package:allergyguard/ui/common/visual_metadata.dart';
 import 'package:allergyguard/ui/about/about_screen.dart';
@@ -18,11 +20,14 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  final LocalAllergenRepository _allergenRepository = LocalAllergenRepository();
   final LocalPreferencesService _preferences = LocalPreferencesService();
   String _languageCode = 'it';
   TtsSpeed _ttsSpeed = TtsSpeed.normal;
   bool _resultAutoPlayEnabled = true;
   bool _communityLearningEnabled = true;
+  bool _isSyncingAllergenData = false;
+  AllergenCatalogState? _allergenCatalogState;
 
   @override
   void initState() {
@@ -47,6 +52,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 builder: (_) => const AllergenSetupScreen(),
               ),
             ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.cloud_sync_outlined),
+            title: Text(_allergenDataUpdateTitle),
+            subtitle: Text(_allergenDataUpdateSubtitle),
+            trailing: _isSyncingAllergenData
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.chevron_right),
+            onTap: _isSyncingAllergenData ? null : _syncAllergenData,
           ),
           _SectionHeader(l10n.settingsSectionAccessibility),
           ListTile(
@@ -128,6 +146,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final autoPlayEnabled = await _preferences.isResultAutoPlayEnabled();
     final communityLearningEnabled =
         await _preferences.isCommunityLearningEnabled();
+    final catalogState = await _allergenRepository.getCatalogState();
     final speed = TtsSpeed.values.firstWhere(
       (value) => value.name == speedName,
       orElse: () => TtsSpeed.normal,
@@ -138,7 +157,62 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _ttsSpeed = speed;
       _resultAutoPlayEnabled = autoPlayEnabled;
       _communityLearningEnabled = communityLearningEnabled;
+      _allergenCatalogState = catalogState;
     });
+  }
+
+  Future<void> _syncAllergenData() async {
+    setState(() => _isSyncingAllergenData = true);
+    final result = await _allergenRepository.syncRemoteAllergens();
+    await _loadSettings();
+    if (!mounted) return;
+
+    setState(() => _isSyncingAllergenData = false);
+
+    final messenger = ScaffoldMessenger.of(context);
+    final names = result.addedAllergens
+        .map((allergen) => allergen.localizedName(_languageCode))
+        .toList(growable: false);
+
+    if (!result.remoteAvailable) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(_catalogMessageRemoteUnavailable())),
+      );
+      return;
+    }
+
+    if (!result.success) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            result.errorMessage == null || result.errorMessage!.isEmpty
+                ? _catalogMessageSyncError()
+                : '${_catalogMessageSyncError()} ${result.errorMessage!}',
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (!result.updated) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(_catalogMessageAlreadyUpdated(result.localVersion))),
+      );
+      return;
+    }
+
+    final details = names.isEmpty ? null : names.join(', ');
+    final baseMessage = _catalogMessageUpdated(result.localVersion);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          details == null || details.isEmpty
+              ? baseMessage
+              : '$baseMessage ${_catalogMessageAddedPrefix()} $details',
+        ),
+        duration: const Duration(seconds: 5),
+      ),
+    );
   }
 
   Future<void> _showLanguagePicker() async {
@@ -287,6 +361,118 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       TtsSpeed.normal => l10n.settingsTtsSpeedNormal,
       TtsSpeed.fast => l10n.settingsTtsSpeedFast,
     };
+  }
+
+  String get _allergenDataUpdateTitle {
+    return switch (_languageCode) {
+      'it' => 'Aggiorna dati allergeni',
+      'de' => 'Allergendaten aktualisieren',
+      'fr' => 'Mettre a jour les donnees allergenes',
+      'es' => 'Actualizar datos de alergenos',
+      _ => 'Refresh allergen data',
+    };
+  }
+
+  String get _allergenDataUpdateSubtitle {
+    final state = _allergenCatalogState;
+    if (state == null) {
+      return switch (_languageCode) {
+        'it' => 'Carico stato catalogo...',
+        _ => 'Loading catalog status...',
+      };
+    }
+
+    final sourceLabel = state.cachedVersion > 0
+        ? _catalogSubtitleCacheVersion(state.cachedVersion)
+        : _catalogSubtitleBundleVersion(state.bundledVersion);
+    final remoteLabel = state.remoteAvailable
+        ? _catalogSubtitleRemoteAvailable()
+        : _catalogSubtitleRemoteUnavailable();
+
+    if (state.cachedUpdatedAt == null) {
+      return '$sourceLabel. $remoteLabel';
+    }
+
+    final updated = _formatShortDate(state.cachedUpdatedAt!);
+    return '$sourceLabel. ${_catalogSubtitleUpdatedAt(updated)}. $remoteLabel';
+  }
+
+  String _catalogSubtitleCacheVersion(int version) {
+    return switch (_languageCode) {
+      'it' => 'Catalogo remoto locale v$version',
+      _ => 'Cached remote catalog v$version',
+    };
+  }
+
+  String _catalogSubtitleBundleVersion(int version) {
+    return switch (_languageCode) {
+      'it' => 'Solo bundle locale v$version',
+      _ => 'Bundled catalog only v$version',
+    };
+  }
+
+  String _catalogSubtitleUpdatedAt(String value) {
+    return switch (_languageCode) {
+      'it' => 'Aggiornato il $value',
+      _ => 'Updated on $value',
+    };
+  }
+
+  String _catalogSubtitleRemoteAvailable() {
+    return switch (_languageCode) {
+      'it' => 'Sync remota disponibile',
+      _ => 'Remote sync available',
+    };
+  }
+
+  String _catalogSubtitleRemoteUnavailable() {
+    return switch (_languageCode) {
+      'it' => 'Backend non configurato',
+      _ => 'Backend not configured',
+    };
+  }
+
+  String _catalogMessageRemoteUnavailable() {
+    return switch (_languageCode) {
+      'it' => 'Sync allergeni non disponibile: backend non configurato.',
+      _ => 'Allergen sync unavailable: backend not configured.',
+    };
+  }
+
+  String _catalogMessageSyncError() {
+    return switch (_languageCode) {
+      'it' => 'Impossibile aggiornare i dati allergeni.',
+      _ => 'Unable to refresh allergen data.',
+    };
+  }
+
+  String _catalogMessageAlreadyUpdated(int version) {
+    return switch (_languageCode) {
+      'it' => 'Dati allergeni gia aggiornati alla versione $version.',
+      _ => 'Allergen data is already up to date at version $version.',
+    };
+  }
+
+  String _catalogMessageUpdated(int version) {
+    return switch (_languageCode) {
+      'it' => 'Dati allergeni aggiornati alla versione $version.',
+      _ => 'Allergen data updated to version $version.',
+    };
+  }
+
+  String _catalogMessageAddedPrefix() {
+    return switch (_languageCode) {
+      'it' => 'Nuovi allergeni:',
+      _ => 'New allergens:',
+    };
+  }
+
+  String _formatShortDate(DateTime value) {
+    final local = value.toLocal();
+    final day = local.day.toString().padLeft(2, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    final year = local.year.toString();
+    return '$day/$month/$year';
   }
 }
 

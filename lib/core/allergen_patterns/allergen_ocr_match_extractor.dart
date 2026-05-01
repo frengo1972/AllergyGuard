@@ -8,79 +8,82 @@ class AllergenOcrMatchExtractor {
   List<ScanResultMatch> extract({
     required OcrResult ocrResult,
     required Iterable<String> selectedAllergenKeys,
-    required Map<String, Map<String, String>> allergenTranslationsByKey,
+    required Map<String, Map<String, List<String>>> allergenTermsByKey,
     required Map<String, String> localizedAllergenNames,
     bool singleBestMatchPerAllergen = false,
   }) {
     final matchesBySignature = <String, ScanResultMatch>{};
 
     for (final allergenKey in selectedAllergenKeys) {
-      final translations = allergenTranslationsByKey[allergenKey];
-      if (translations == null) continue;
+      final termsByLanguage = allergenTermsByKey[allergenKey];
+      if (termsByLanguage == null) continue;
 
-      for (final entry in translations.entries) {
-        final term = entry.value.trim();
-        final normalizedTerm = _normalizeText(term);
-        if (normalizedTerm.isEmpty) continue;
+      for (final entry in termsByLanguage.entries) {
+        for (final rawTerm in entry.value) {
+          final term = rawTerm.trim();
+          final normalizedTerm = _normalizeText(term);
+          if (normalizedTerm.isEmpty) continue;
 
-        for (final line in ocrResult.lines) {
-          var matchedElementInLine = false;
+          for (final line in ocrResult.lines) {
+            var matchedElementInLine = false;
 
-          for (final element in line.elements) {
-            final word = element.text.trim();
-            final normalizedWord = _normalizeText(word);
-            if (normalizedWord.isEmpty ||
-                !_containsWholeNormalizedTerm(normalizedWord, normalizedTerm)) {
+            for (final element in line.elements) {
+              final word = element.text.trim();
+              final normalizedWord = _normalizeText(word);
+              if (normalizedWord.isEmpty ||
+                  !_containsWholeNormalizedTerm(
+                      normalizedWord, normalizedTerm)) {
+                continue;
+              }
+
+              matchedElementInLine = true;
+              _registerMatch(
+                matchesBySignature,
+                ScanResultMatch(
+                  allergenKey: allergenKey,
+                  localizedAllergenName:
+                      localizedAllergenNames[allergenKey] ?? allergenKey,
+                  matchedText: _extractMatchedSubstring(
+                    word,
+                    term,
+                    normalizedTerm,
+                  ),
+                  containingText: word,
+                  languageCode: entry.key,
+                  languageLabel: _languageLabelForCode(entry.key),
+                  isPartial: false,
+                  boundingBox: element.boundingBox ?? line.boundingBox,
+                  lineText: line.text,
+                ),
+              );
+            }
+
+            final normalizedLine = _normalizeText(line.text);
+            final isWholeLineMatch = _containsWholeNormalizedTerm(
+              normalizedLine,
+              normalizedTerm,
+            );
+            if (!isWholeLineMatch ||
+                (!term.contains(' ') && matchedElementInLine)) {
               continue;
             }
 
-            matchedElementInLine = true;
             _registerMatch(
               matchesBySignature,
               ScanResultMatch(
                 allergenKey: allergenKey,
                 localizedAllergenName:
                     localizedAllergenNames[allergenKey] ?? allergenKey,
-                matchedText: _extractMatchedSubstring(
-                  word,
-                  term,
-                  normalizedTerm,
-                ),
-                containingText: word,
+                matchedText: term,
+                containingText: line.text.trim(),
                 languageCode: entry.key,
                 languageLabel: _languageLabelForCode(entry.key),
                 isPartial: false,
-                boundingBox: element.boundingBox ?? line.boundingBox,
+                boundingBox: line.boundingBox,
                 lineText: line.text,
               ),
             );
           }
-
-          final normalizedLine = _normalizeText(line.text);
-          final isWholeLineMatch = _containsWholeNormalizedTerm(
-            normalizedLine,
-            normalizedTerm,
-          );
-          if (!isWholeLineMatch ||
-              (!term.contains(' ') && matchedElementInLine)) {
-            continue;
-          }
-
-          _registerMatch(
-            matchesBySignature,
-            ScanResultMatch(
-              allergenKey: allergenKey,
-              localizedAllergenName:
-                  localizedAllergenNames[allergenKey] ?? allergenKey,
-              matchedText: term,
-              containingText: line.text.trim(),
-              languageCode: entry.key,
-              languageLabel: _languageLabelForCode(entry.key),
-              isPartial: false,
-              boundingBox: line.boundingBox,
-              lineText: line.text,
-            ),
-          );
         }
       }
     }

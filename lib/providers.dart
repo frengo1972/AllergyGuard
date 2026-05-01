@@ -8,6 +8,7 @@ import 'package:allergyguard/core/ocr/mlkit_ocr.dart';
 import 'package:allergyguard/core/ocr/cloud_vision_ocr.dart';
 import 'package:allergyguard/core/scanner/barcode_scanner.dart';
 import 'package:allergyguard/core/scanner/open_food_facts_client.dart';
+import 'package:allergyguard/core/scanner/product_image_ocr_service.dart';
 import 'package:allergyguard/core/tts/tts_service.dart';
 import 'package:allergyguard/data/feedback/feedback_submission_service.dart';
 import 'package:allergyguard/data/remote/allergen_remote_repo.dart';
@@ -60,6 +61,14 @@ final barcodeScannerProvider = Provider<BarcodeScannerService>(
 /// Provider Open Food Facts client
 final openFoodFactsProvider = Provider<OpenFoodFactsClient>((ref) {
   return OpenFoodFactsClient(dio: ref.watch(dioProvider));
+});
+
+/// Provider OCR per immagini etichetta provenienti da Open Food Facts.
+final productImageOcrServiceProvider = Provider<ProductImageOcrService>((ref) {
+  return ProductImageOcrService(
+    dio: ref.watch(dioProvider),
+    ocrService: ref.watch(ocrServiceProvider),
+  );
 });
 
 /// Provider TTS Service

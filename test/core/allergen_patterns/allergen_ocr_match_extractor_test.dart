@@ -37,10 +37,10 @@ void main() {
       final matches = extractor.extract(
         ocrResult: result,
         selectedAllergenKeys: const ['sesame'],
-        allergenTranslationsByKey: const {
+        allergenTermsByKey: const {
           'sesame': {
-            'it': 'sesamo',
-            'de': 'sesam',
+            'it': ['sesamo'],
+            'de': ['sesam'],
           },
         },
         localizedAllergenNames: const {'sesame': 'Sesamo'},
@@ -69,11 +69,11 @@ void main() {
       final matches = extractor.extract(
         ocrResult: result,
         selectedAllergenKeys: const ['sesame'],
-        allergenTranslationsByKey: const {
+        allergenTermsByKey: const {
           'sesame': {
-            'de': 'sesam',
-            'nl': 'sesam',
-            'sv': 'sesam',
+            'de': ['sesam'],
+            'nl': ['sesam'],
+            'sv': ['sesam'],
           },
         },
         localizedAllergenNames: const {'sesame': 'Sesamo'},
@@ -104,9 +104,9 @@ void main() {
       final matches = extractor.extract(
         ocrResult: result,
         selectedAllergenKeys: const ['sesame'],
-        allergenTranslationsByKey: const {
+        allergenTermsByKey: const {
           'sesame': {
-            'it': 'sesamo',
+            'it': ['sesamo'],
           },
         },
         localizedAllergenNames: const {'sesame': 'Sesamo'},
@@ -136,9 +136,9 @@ void main() {
       final matches = extractor.extract(
         ocrResult: result,
         selectedAllergenKeys: const ['soy'],
-        allergenTranslationsByKey: const {
+        allergenTermsByKey: const {
           'soy': {
-            'it': 'soia',
+            'it': ['soia'],
           },
         },
         localizedAllergenNames: const {'soy': 'Soia'},
@@ -174,10 +174,10 @@ void main() {
       final matches = extractor.extract(
         ocrResult: result,
         selectedAllergenKeys: const ['sesame'],
-        allergenTranslationsByKey: const {
+        allergenTermsByKey: const {
           'sesame': {
-            'it': 'sesamo',
-            'de': 'sesam',
+            'it': ['sesamo'],
+            'de': ['sesam'],
           },
         },
         localizedAllergenNames: const {'sesame': 'Sesamo'},
@@ -186,6 +186,38 @@ void main() {
 
       expect(matches, hasLength(1));
       expect(matches.single.matchedText, 'sesamo');
+      expect(matches.single.languageCode, 'it');
+    });
+
+    test('matches aliases while keeping the localized label separate', () {
+      final result = buildResult(
+        text: 'Ingredienti: latte scremato.',
+        lines: const [
+          OcrTextLineData(
+            text: 'Ingredienti: latte scremato.',
+            elements: [
+              OcrTextElementData(text: 'Ingredienti:'),
+              OcrTextElementData(text: 'latte'),
+              OcrTextElementData(text: 'scremato.'),
+            ],
+          ),
+        ],
+      );
+
+      final matches = extractor.extract(
+        ocrResult: result,
+        selectedAllergenKeys: const ['milk'],
+        allergenTermsByKey: const {
+          'milk': {
+            'it': ['latticini', 'latte'],
+          },
+        },
+        localizedAllergenNames: const {'milk': 'Latticini'},
+      );
+
+      expect(matches, hasLength(1));
+      expect(matches.single.localizedAllergenName, 'Latticini');
+      expect(matches.single.matchedText, 'latte');
       expect(matches.single.languageCode, 'it');
     });
   });

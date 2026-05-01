@@ -40,7 +40,7 @@ class AppCameraController {
     await _detectTorchAvailability();
   }
 
-  /// Avvia lo stream di frame per OCR con intervallo di 800ms.
+  /// Avvia lo stream di frame per analisi con intervallo configurato.
   Future<void> startImageStream(
       Future<void> Function(CameraImage) onFrame) async {
     if (_controller == null || isStreamingImages) return;

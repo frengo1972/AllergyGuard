@@ -273,7 +273,7 @@ Richiesti SOLO se supporti tablet. Per MVP mobile-only puoi skippare.
    - Testing → Internal testing (prima) → aggiungi la tua email come tester → carica AAB
    - Prova l'app via link tester
    - Poi Production → Create new release → upload AAB
-   - Release notes: "Prima versione pubblica di AllergyGuard."
+   - Release notes: usa `docs/RELEASE_NOTES.md` per la versione corrente.
    - Submit for review
 
 5. **Tempi review**: prima pubblicazione 3–7 giorni (verifica policy accurata). Update successive 2–24h.

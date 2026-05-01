@@ -5,10 +5,12 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:permission_handler/permission_handler.dart';
 import 'package:allergyguard/core/allergen_patterns/allergen_ocr_match_extractor.dart';
 import 'package:allergyguard/core/allergen_patterns/allergen_pattern_engine.dart';
+import 'package:allergyguard/core/constants.dart';
 import 'package:allergyguard/core/ocr/ocr_service.dart';
 import 'package:allergyguard/core/allergen_patterns/pattern_repository.dart';
 import 'package:allergyguard/core/scanner/barcode_scanner.dart';
 import 'package:allergyguard/core/scanner/camera_controller.dart';
+import 'package:allergyguard/core/scanner/product_image_ocr_service.dart';
 import 'package:allergyguard/data/local/local_allergen_repository.dart';
 import 'package:allergyguard/data/local/local_preferences_service.dart';
 import 'package:allergyguard/domain/models/product.dart';
@@ -45,11 +47,15 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   String? _cameraError;
   String? _lastBarcode;
   String? _lastOcrSignature;
+  DateTime? _lastBarcodeSeenAt;
+  DateTime? _lastOcrSeenAt;
+  String? _liveFeedback;
+  String _languageCode = 'it';
   int _analysisFrameIndex = 0;
   Set<String> _selectedAllergenKeys = <String>{};
   Map<String, List<String>> _allergenNamesByKey = <String, List<String>>{};
-  Map<String, Map<String, String>> _allergenTranslationsByKey =
-      <String, Map<String, String>>{};
+  Map<String, Map<String, List<String>>> _allergenTermsByKey =
+      <String, Map<String, List<String>>>{};
   Map<String, String> _localizedAllergenNames = <String, String>{};
 
   @override
@@ -210,7 +216,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     final l10n = AppLocalizations.of(context);
     final text = _selectedAllergenKeys.isEmpty
         ? l10n.scannerNoAllergenSelected
-        : l10n.scannerPointCamera;
+        : _buildLiveStatusText(l10n);
 
     return Positioned(
       bottom: 120,
@@ -280,8 +286,9 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     final allergenNamesByKey = <String, List<String>>{
       for (final allergen in allergens) allergen.nameKey: allergen.allNames,
     };
-    final allergenTranslationsByKey = <String, Map<String, String>>{
-      for (final allergen in allergens) allergen.nameKey: allergen.names,
+    final allergenTermsByKey = <String, Map<String, List<String>>>{
+      for (final allergen in allergens)
+        allergen.nameKey: allergen.searchableTermsByLanguage,
     };
     final localizedAllergenNames = <String, String>{
       for (final allergen in allergens)
@@ -292,10 +299,16 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     setState(() {
       _selectedAllergenKeys = selectedKeys.toSet();
       _allergenNamesByKey = allergenNamesByKey;
-      _allergenTranslationsByKey = allergenTranslationsByKey;
+      _allergenTermsByKey = allergenTermsByKey;
       _localizedAllergenNames = localizedAllergenNames;
+      _languageCode = languageCode;
       _isLoadingScannerConfig = false;
     });
+    _clearRecentDetections();
+
+    if (_selectedAllergenKeys.isNotEmpty) {
+      _setLiveFeedback('Scanner attivo: cerco barcode e ingredienti.');
+    }
 
     await _startAutoAnalysis();
   }
@@ -332,6 +345,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           _cameraError = l10n.scannerCameraNone;
         }
       });
+      _clearRecentDetections();
+      _setLiveFeedback('Scanner attivo: cerco barcode e ingredienti.');
       await _startAutoAnalysis();
     } catch (error) {
       if (!mounted) return;
@@ -368,21 +383,24 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           return;
         }
 
-        final shouldAnalyzeBarcode = _analysisFrameIndex.isEven;
+        final shouldAnalyzeOcr = _analysisFrameIndex.isEven;
         _analysisFrameIndex++;
 
-        if (shouldAnalyzeBarcode) {
-          final barcodeResult = await _tryDetectBarcodeResult(
-            image,
-            scanner: barcodeScanner,
-          );
-          if (!mounted || _isPresentingResult || barcodeResult == null) {
-            return;
-          }
+        final barcodeResult = await _tryDetectBarcodeResult(
+          image,
+          scanner: barcodeScanner,
+        );
+        if (!mounted || _isPresentingResult) {
+          return;
+        }
+        if (barcodeResult != null) {
           await _presentResult(barcodeResult);
           return;
         }
 
+        if (!shouldAnalyzeOcr) {
+          return;
+        }
         final ocrResult = await _tryDetectOcrResult(
           image,
           ocrService: ocrService,
@@ -417,17 +435,23 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         _isPresentingResult ||
         barcode == null ||
         barcode.isEmpty ||
-        barcode == _lastBarcode) {
+        _shouldSkipRecentBarcode(barcode)) {
       return null;
     }
 
-    setState(() => _lastBarcode = barcode);
+    _setLiveFeedback('Barcode rilevato: $barcode. Verifica prodotto...');
     final product = await ref.read(openFoodFactsProvider).getByBarcode(barcode);
-    if (!mounted || _isPresentingResult || product == null) {
+    if (!mounted || _isPresentingResult) {
+      return null;
+    }
+    if (product == null) {
+      _rememberBarcode(barcode);
+      _setLiveFeedback('Barcode letto, ma il prodotto non e disponibile.');
       return null;
     }
 
-    return _buildBarcodeResult(product);
+    _rememberBarcode(barcode);
+    return await _buildBarcodeResult(product);
   }
 
   Future<ScanResult?> _tryDetectOcrResult(
@@ -448,13 +472,17 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       return null;
     }
 
+    _setLiveFeedback(
+      'Testo letto: "${_truncatePreview(recognizedText)}". Controllo allergeni...',
+    );
+
     return _buildOcrResult(result);
   }
 
   Future<ScanResult?> _buildOcrResult(OcrResult liveResult) async {
     final recognizedText = liveResult.text.trim();
     final signature = _normalizeText(recognizedText);
-    if (signature.length < 12 || signature == _lastOcrSignature) {
+    if (signature.length < 12 || _shouldSkipRecentOcrSignature(signature)) {
       return null;
     }
 
@@ -469,26 +497,66 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
     if (analysis.level != ScanResultLevel.danger &&
         analysis.level != ScanResultLevel.warning) {
+      _setLiveFeedback(
+        'Testo riconosciuto, ma nessun allergene selezionato e stato trovato.',
+      );
       return null;
     }
 
-    _lastOcrSignature = signature;
-    final detailedResult = await _captureStillOcrResult();
-    final finalOcrResult = detailedResult?.text.trim().isNotEmpty == true
-        ? detailedResult!
-        : liveResult;
-    final finalText = finalOcrResult.text.trim();
-    final finalAnalysis = engine.analyze(
-      ocrText: finalText,
-      userAllergenKeys: _selectedAllergenKeys.toList(),
-    );
-    final matches = _ocrMatchExtractor.extract(
-      ocrResult: finalOcrResult,
+    _rememberOcrSignature(signature);
+    final liveMatches = _ocrMatchExtractor.extract(
+      ocrResult: liveResult,
       selectedAllergenKeys: _selectedAllergenKeys,
-      allergenTranslationsByKey: _allergenTranslationsByKey,
+      allergenTermsByKey: _allergenTermsByKey,
       localizedAllergenNames: _localizedAllergenNames,
       singleBestMatchPerAllergen: true,
     );
+
+    OcrResult finalOcrResult = liveResult;
+    ScanResult finalAnalysis = analysis;
+    List<ScanResultMatch> matches = liveMatches;
+
+    if (_shouldCaptureStillConfirmation(
+      liveResult: liveResult,
+      liveMatches: liveMatches,
+    )) {
+      _setLiveFeedback('Possibile allergene rilevato. Conferma in corso...');
+      final detailedResult = await _captureStillOcrResult();
+      if (detailedResult?.text.trim().isNotEmpty == true) {
+        finalOcrResult = detailedResult!;
+        final finalText = finalOcrResult.text.trim();
+        finalAnalysis = engine.analyze(
+          ocrText: finalText,
+          userAllergenKeys: _selectedAllergenKeys.toList(),
+        );
+        matches = _ocrMatchExtractor.extract(
+          ocrResult: finalOcrResult,
+          selectedAllergenKeys: _selectedAllergenKeys,
+          allergenTermsByKey: _allergenTermsByKey,
+          localizedAllergenNames: _localizedAllergenNames,
+          singleBestMatchPerAllergen: true,
+        );
+      }
+    }
+
+    final finalText = finalOcrResult.text.trim();
+    if (finalAnalysis.level != ScanResultLevel.danger &&
+        finalAnalysis.level != ScanResultLevel.warning) {
+      _setLiveFeedback(
+        'Testo confermato, ma il match non e abbastanza affidabile.',
+      );
+      return null;
+    }
+
+    if (matches.isEmpty) {
+      matches = _ocrMatchExtractor.extract(
+        ocrResult: finalOcrResult,
+        selectedAllergenKeys: _selectedAllergenKeys,
+        allergenTermsByKey: _allergenTermsByKey,
+        localizedAllergenNames: _localizedAllergenNames,
+        singleBestMatchPerAllergen: true,
+      );
+    }
 
     return ScanResult(
       level: finalAnalysis.level,
@@ -504,15 +572,23 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
   Future<OcrResult?> _captureStillOcrResult() async {
     try {
-      final imagePath = await _cameraController.takePicturePath();
+      final imagePath = await _cameraController.takePicturePath().timeout(
+            const Duration(
+              milliseconds: AppConstants.scannerStillCaptureTimeoutMs,
+            ),
+          );
       if (imagePath == null || imagePath.isEmpty) return null;
-      return await ref.read(ocrServiceProvider).processFile(imagePath);
+      return await ref.read(ocrServiceProvider).processFile(imagePath).timeout(
+            const Duration(
+              milliseconds: AppConstants.scannerStillCaptureTimeoutMs,
+            ),
+          );
     } catch (_) {
       return null;
     }
   }
 
-  ScanResult _buildBarcodeResult(Product product) {
+  Future<ScanResult> _buildBarcodeResult(Product product) async {
     final directAllergens =
         product.allergenKeys.where(_selectedAllergenKeys.contains).toList();
     final traceAllergens = product.tracesKeys
@@ -523,6 +599,29 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         )
         .toList();
 
+    if (directAllergens.isEmpty &&
+        traceAllergens.isEmpty &&
+        product.labelImageCandidates.isNotEmpty) {
+      _setLiveFeedback(
+          'Tag prodotto incompleti: leggo immagine ingredienti...');
+      final imageOcrResult = await _buildProductImageOcrBarcodeResult(product);
+      if (imageOcrResult != null) {
+        return imageOcrResult;
+      }
+    }
+
+    return _buildStructuredBarcodeResult(
+      product,
+      directAllergens: directAllergens,
+      traceAllergens: traceAllergens,
+    );
+  }
+
+  ScanResult _buildStructuredBarcodeResult(
+    Product product, {
+    required List<String> directAllergens,
+    required List<String> traceAllergens,
+  }) {
     final level = directAllergens.isNotEmpty
         ? ScanResultLevel.danger
         : traceAllergens.isNotEmpty
@@ -547,6 +646,102 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     );
   }
 
+  Future<ScanResult?> _buildProductImageOcrBarcodeResult(
+    Product product,
+  ) async {
+    final imageResults = await _readProductLabelImages(product);
+    if (imageResults.isEmpty) return null;
+
+    final engine = AllergenPatternEngine(
+      verifiedPatterns: _patternRepository.verifiedPatterns,
+      allergenNames: _allergenNamesByKey,
+    );
+
+    for (final imageResult in imageResults) {
+      final imageText = imageResult.ocrResult.text.trim();
+      if (imageText.isEmpty) continue;
+
+      final analysis = engine.analyze(
+        ocrText: imageText,
+        userAllergenKeys: _selectedAllergenKeys.toList(),
+      );
+      if (analysis.level != ScanResultLevel.danger &&
+          analysis.level != ScanResultLevel.warning) {
+        continue;
+      }
+
+      var matches = _ocrMatchExtractor.extract(
+        ocrResult: imageResult.ocrResult,
+        selectedAllergenKeys: _selectedAllergenKeys,
+        allergenTermsByKey: _allergenTermsByKey,
+        localizedAllergenNames: _localizedAllergenNames,
+        singleBestMatchPerAllergen: true,
+      );
+      if (matches.isEmpty) {
+        matches = const <ScanResultMatch>[];
+      }
+
+      final highlightTerms = matches
+          .map((match) => match.matchedText)
+          .where((term) => term.trim().isNotEmpty)
+          .toSet()
+          .toList()
+        ..addAll(analysis.highlightTerms)
+        ..sort((left, right) => right.length.compareTo(left.length));
+
+      return ScanResult(
+        level: analysis.level,
+        allergens: _localizeAllergenKeys(analysis.allergens),
+        ocrText: _mergeProductAndImageText(
+          product.ingredientsText,
+          imageText,
+        ),
+        highlightTerms: highlightTerms,
+        matches: matches,
+        referenceImagePath: imageResult.ocrResult.imagePath,
+        barcode: product.barcode,
+        productName: product.name.isEmpty ? null : product.name,
+        brand: product.brand.isEmpty ? null : product.brand,
+        confidence: imageResult.ocrResult.confidence,
+      );
+    }
+
+    _setLiveFeedback(
+      'Immagine ingredienti letta: nessun allergene selezionato trovato.',
+    );
+    return null;
+  }
+
+  Future<List<ProductImageOcrResult>> _readProductLabelImages(
+    Product product,
+  ) async {
+    try {
+      return await ref
+          .read(productImageOcrServiceProvider)
+          .processLabelImages(
+            product,
+            maxImages: AppConstants.offImageOcrMaxImages,
+            preferredLanguageCode: _languageCode,
+          )
+          .timeout(
+            const Duration(milliseconds: AppConstants.offImageOcrTimeoutMs),
+          );
+    } catch (_) {
+      return const <ProductImageOcrResult>[];
+    }
+  }
+
+  String _mergeProductAndImageText(String productText, String imageText) {
+    final structuredText = productText.trim();
+    final ocrText = imageText.trim();
+    if (structuredText.isEmpty) return ocrText;
+    if (ocrText.isEmpty ||
+        _normalizeText(structuredText) == _normalizeText(ocrText)) {
+      return structuredText;
+    }
+    return '$structuredText\n\nTesto OCR immagine Open Food Facts:\n$ocrText';
+  }
+
   Future<void> _presentResult(ScanResult result) async {
     if (_isPresentingResult) return;
 
@@ -566,6 +761,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     setState(() {
       _isPresentingResult = false;
     });
+    _setLiveFeedback('Scanner riattivato: cerco barcode e ingredienti.');
     await _startAutoAnalysis();
   }
 
@@ -586,6 +782,78 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
   String _normalizeText(String value) {
     return value.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  String _buildLiveStatusText(AppLocalizations l10n) {
+    const barcodeInterval = AppConstants.cameraOcrIntervalMs;
+    const ocrInterval = AppConstants.cameraOcrIntervalMs * 2;
+    final headline =
+        _liveFeedback ?? 'Scanner attivo: cerco barcode e ingredienti.';
+    return '$headline\n'
+        'Barcode circa ogni $barcodeInterval ms, OCR circa ogni $ocrInterval ms.\n'
+        '${l10n.scannerPointCamera}';
+  }
+
+  void _setLiveFeedback(String message) {
+    if (!mounted || _liveFeedback == message) return;
+    setState(() => _liveFeedback = message);
+  }
+
+  String _truncatePreview(String value) {
+    final compact = value.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (compact.length <= 48) return compact;
+    return '${compact.substring(0, 48)}...';
+  }
+
+  bool _shouldCaptureStillConfirmation({
+    required OcrResult liveResult,
+    required List<ScanResultMatch> liveMatches,
+  }) {
+    if (liveResult.confidence <
+        AppConstants.scannerStillCaptureConfidenceThreshold) {
+      return true;
+    }
+    if (liveMatches.isEmpty) {
+      return true;
+    }
+    if (liveMatches
+        .any((match) => match.boundingBox == null || match.isPartial)) {
+      return true;
+    }
+    return false;
+  }
+
+  bool _shouldSkipRecentBarcode(String barcode) {
+    if (_lastBarcode != barcode || _lastBarcodeSeenAt == null) {
+      return false;
+    }
+    return DateTime.now().difference(_lastBarcodeSeenAt!).inMilliseconds <
+        AppConstants.scannerDuplicateCooldownMs;
+  }
+
+  bool _shouldSkipRecentOcrSignature(String signature) {
+    if (_lastOcrSignature != signature || _lastOcrSeenAt == null) {
+      return false;
+    }
+    return DateTime.now().difference(_lastOcrSeenAt!).inMilliseconds <
+        AppConstants.scannerDuplicateCooldownMs;
+  }
+
+  void _rememberBarcode(String barcode) {
+    _lastBarcode = barcode;
+    _lastBarcodeSeenAt = DateTime.now();
+  }
+
+  void _rememberOcrSignature(String signature) {
+    _lastOcrSignature = signature;
+    _lastOcrSeenAt = DateTime.now();
+  }
+
+  void _clearRecentDetections() {
+    _lastBarcode = null;
+    _lastOcrSignature = null;
+    _lastBarcodeSeenAt = null;
+    _lastOcrSeenAt = null;
   }
 
   List<String> _extractHighlightTerms(

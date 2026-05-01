@@ -107,7 +107,7 @@ class _AllergenSetupScreenState extends State<AllergenSetupScreen> {
         final isSelected = _selectedAllergenKeys.contains(allergen.nameKey);
         return SwitchListTile(
           value: isSelected,
-          secondary: allergenBadgeForKey(allergen.nameKey, context),
+          secondary: allergenBadgeForAllergen(allergen, context),
           title: Text(allergen.localizedName(_languageCode)),
           subtitle: Text(
             allergen.euRegulated

@@ -165,7 +165,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 return CheckboxListTile(
                   value: isSelected,
                   controlAffinity: ListTileControlAffinity.trailing,
-                  secondary: allergenBadgeForKey(allergen.nameKey, context),
+                  secondary: allergenBadgeForAllergen(allergen, context),
                   title: Text(allergen.localizedName(_languageCode)),
                   subtitle: Text(
                     allergen.euRegulated

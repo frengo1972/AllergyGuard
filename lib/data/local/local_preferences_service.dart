@@ -27,6 +27,11 @@ class LocalPreferencesService {
   static const String pendingFeedbackKey = 'pending_feedback';
   static const String deviceIdKey = 'device_id';
   static const String communityLearningKey = 'community_learning_enabled';
+  static const String cachedRemoteAllergensKey = 'cached_remote_allergens';
+  static const String cachedRemoteAllergensVersionKey =
+      'cached_remote_allergens_version';
+  static const String cachedRemoteAllergensUpdatedAtKey =
+      'cached_remote_allergens_updated_at';
 
   static const List<LanguageOption> supportedLanguages = [
     LanguageOption(code: 'it', label: 'Italiano', flagEmoji: '🇮🇹'),
@@ -79,14 +84,64 @@ class LocalPreferencesService {
 
     final decoded = jsonDecode(raw) as List<dynamic>;
     return decoded
-        .whereType<Map<String, dynamic>>()
-        .map((item) => Map<String, dynamic>.from(item))
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item as Map))
         .toList();
   }
 
   Future<void> setCustomAllergensJson(List<Map<String, dynamic>> items) async {
     final prefs = await _prefs;
     await prefs.setString(customAllergensKey, jsonEncode(items));
+  }
+
+  Future<List<Map<String, dynamic>>> getCachedRemoteAllergensJson() async {
+    final prefs = await _prefs;
+    final raw = prefs.getString(cachedRemoteAllergensKey);
+    if (raw == null || raw.isEmpty) {
+      return <Map<String, dynamic>>[];
+    }
+
+    final decoded = jsonDecode(raw) as List<dynamic>;
+    return decoded
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+  }
+
+  Future<void> setCachedRemoteAllergensJson(
+    List<Map<String, dynamic>> items,
+  ) async {
+    final prefs = await _prefs;
+    await prefs.setString(cachedRemoteAllergensKey, jsonEncode(items));
+  }
+
+  Future<int> getCachedRemoteAllergensVersion() async {
+    final prefs = await _prefs;
+    return prefs.getInt(cachedRemoteAllergensVersionKey) ?? 0;
+  }
+
+  Future<void> setCachedRemoteAllergensVersion(int version) async {
+    final prefs = await _prefs;
+    await prefs.setInt(cachedRemoteAllergensVersionKey, version);
+  }
+
+  Future<DateTime?> getCachedRemoteAllergensUpdatedAt() async {
+    final prefs = await _prefs;
+    final raw = prefs.getString(cachedRemoteAllergensUpdatedAtKey);
+    if (raw == null || raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
+  }
+
+  Future<void> setCachedRemoteAllergensUpdatedAt(DateTime? value) async {
+    final prefs = await _prefs;
+    if (value == null) {
+      await prefs.remove(cachedRemoteAllergensUpdatedAtKey);
+      return;
+    }
+    await prefs.setString(
+      cachedRemoteAllergensUpdatedAtKey,
+      value.toIso8601String(),
+    );
   }
 
   Future<String> getTtsSpeedName() async {

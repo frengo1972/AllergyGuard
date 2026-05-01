@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:allergyguard/domain/models/allergen.dart';
 
 String languageFlagForCode(String languageCode) {
   switch (languageCode) {
@@ -87,6 +88,14 @@ Color allergenColorForKey(String allergenKey, BuildContext context) {
   }
 }
 
+Color allergenColorForAllergen(Allergen allergen, BuildContext context) {
+  if (allergen.iconColor != null && allergen.iconColor!.isNotEmpty) {
+    final parsed = _colorFromHex(allergen.iconColor!);
+    if (parsed != null) return parsed;
+  }
+  return allergenColorForKey(allergen.nameKey, context);
+}
+
 Widget allergenBadgeForKey(String allergenKey, BuildContext context) {
   final color = allergenColorForKey(allergenKey, context);
   return CircleAvatar(
@@ -96,4 +105,44 @@ Widget allergenBadgeForKey(String allergenKey, BuildContext context) {
       style: const TextStyle(fontSize: 18),
     ),
   );
+}
+
+Widget allergenBadgeForAllergen(Allergen allergen, BuildContext context) {
+  if (allergen.iconType == AllergenIconType.bundle) {
+    return allergenBadgeForKey(allergen.nameKey, context);
+  }
+
+  final color = allergenColorForAllergen(allergen, context);
+  final emoji = allergen.iconType == AllergenIconType.emoji &&
+          allergen.iconEmoji != null &&
+          allergen.iconEmoji!.isNotEmpty
+      ? allergen.iconEmoji!
+      : '!';
+
+  return CircleAvatar(
+    backgroundColor: color.withValues(alpha: 0.16),
+    child: Text(
+      emoji,
+      style: TextStyle(
+        fontSize: allergen.iconType == AllergenIconType.emoji ? 18 : 16,
+        fontWeight:
+            allergen.iconType == AllergenIconType.emoji ? null : FontWeight.w700,
+        color:
+            allergen.iconType == AllergenIconType.emoji ? null : color,
+      ),
+    ),
+  );
+}
+
+Color? _colorFromHex(String value) {
+  final normalized = value.trim().replaceFirst('#', '');
+  if (normalized.length != 6 && normalized.length != 8) return null;
+  final buffer = StringBuffer();
+  if (normalized.length == 6) {
+    buffer.write('FF');
+  }
+  buffer.write(normalized);
+  final parsed = int.tryParse(buffer.toString(), radix: 16);
+  if (parsed == null) return null;
+  return Color(parsed);
 }
