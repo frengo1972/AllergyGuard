@@ -8,11 +8,15 @@ class AppCameraController {
   CameraController? _controller;
   Timer? _ocrTimer;
   bool _isProcessing = false;
+  bool _isTorchAvailable = false;
+  bool _isTorchEnabled = false;
 
   CameraController? get controller => _controller;
   CameraDescription? get description => _controller?.description;
   bool get isInitialized => _controller?.value.isInitialized ?? false;
   bool get isStreamingImages => _controller?.value.isStreamingImages ?? false;
+  bool get isTorchAvailable => _isTorchAvailable;
+  bool get isTorchEnabled => _isTorchEnabled;
 
   Future<void> initialize() async {
     final cameras = await availableCameras();
@@ -33,9 +37,10 @@ class AppCameraController {
     );
 
     await _controller!.initialize();
+    await _detectTorchAvailability();
   }
 
-  /// Avvia lo stream di frame per OCR con intervallo di 800ms.
+  /// Avvia lo stream di frame per analisi con intervallo configurato.
   Future<void> startImageStream(
       Future<void> Function(CameraImage) onFrame) async {
     if (_controller == null || isStreamingImages) return;
@@ -78,6 +83,39 @@ class AppCameraController {
 
     final file = await _controller!.takePicture();
     return file.path;
+  }
+
+  Future<bool> setTorchEnabled(bool enabled) async {
+    if (_controller == null || !isInitialized) return false;
+
+    try {
+      await _controller!
+          .setFlashMode(enabled ? FlashMode.torch : FlashMode.off);
+      _isTorchAvailable = true;
+      _isTorchEnabled = enabled;
+      return true;
+    } on CameraException {
+      _isTorchAvailable = false;
+      _isTorchEnabled = false;
+      return false;
+    }
+  }
+
+  Future<void> _detectTorchAvailability() async {
+    if (_controller == null || !isInitialized) {
+      _isTorchAvailable = false;
+      _isTorchEnabled = false;
+      return;
+    }
+
+    try {
+      await _controller!.setFlashMode(FlashMode.off);
+      _isTorchAvailable = true;
+      _isTorchEnabled = false;
+    } on CameraException {
+      _isTorchAvailable = false;
+      _isTorchEnabled = false;
+    }
   }
 
   Future<void> dispose() async {

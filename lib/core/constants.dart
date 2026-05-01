@@ -23,7 +23,12 @@ class AppConstants {
   static const int offlineCacheMaxProducts = 50;
 
   // Camera
-  static const int cameraOcrIntervalMs = 800;
+  static const int cameraOcrIntervalMs = 500;
+  static const int scannerDuplicateCooldownMs = 4000;
+  static const double scannerStillCaptureConfidenceThreshold = 0.78;
+  static const int scannerStillCaptureTimeoutMs = 1200;
+  static const int offImageOcrMaxImages = 2;
+  static const int offImageOcrTimeoutMs = 3500;
 
   // Claude API
   static const String claudeModel = 'claude-sonnet-4-20250514';

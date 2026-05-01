@@ -2,6 +2,32 @@
 
 Copia-incolla pronto per il campo "What's new in this version" del Play Console.
 
+## v1.0.2 (2026-04-22) - Miglioramento precisione allergeni
+
+### Italiano (max 500 char)
+```
+Miglioramenti:
+• OCR anche sulle immagini ingredienti di Open Food Facts quando i tag prodotto non bastano
+• Rilevamento piu preciso di allergeni "puo contenere", come sesamo, senape e uova
+• Selezione piu intelligente delle immagini etichetta da analizzare
+• Miglioramenti a riconoscimento e aggiornamento dati allergeni
+
+Grazie per i feedback!
+```
+
+### English (max 500 char)
+```
+Improvements:
+• OCR now also checks Open Food Facts ingredient images when product tags are incomplete
+• Better detection of "may contain" allergens such as sesame, mustard and eggs
+• Smarter label image selection for OCR analysis
+• Improved allergen recognition and allergen data updates
+
+Thanks for your feedback!
+```
+
+---
+
 ## v1.0.0 (2026-04-13) — Prima pubblicazione
 
 ### Italiano (max 500 char)

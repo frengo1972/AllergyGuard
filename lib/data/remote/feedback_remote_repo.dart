@@ -22,6 +22,17 @@ class FeedbackRemoteRepository {
 
   bool get isConfigured => _client != null;
 
+  Future<bool> submitPayload(Map<String, dynamic> payload) async {
+    final client = _client;
+    if (client == null) return false;
+    try {
+      await client.from('user_feedback').insert(payload);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<bool> submit({
     required String deviceId,
     required FeedbackType type,
@@ -35,25 +46,18 @@ class FeedbackRemoteRepository {
     String? countryCode,
     String? appVersion,
   }) async {
-    final client = _client;
-    if (client == null) return false;
-    try {
-      await client.from('user_feedback').insert({
-        'device_id': deviceId,
-        'feedback_type': type.apiValue,
-        'result_level': resultLevel,
-        'is_correct': isCorrect,
-        'expected_level': expectedLevel,
-        'product_barcode': productBarcode,
-        'allergen_keys': allergenKeys,
-        'comment': comment,
-        'language_code': languageCode,
-        'country_code': countryCode,
-        'app_version': appVersion,
-      });
-      return true;
-    } catch (_) {
-      return false;
-    }
+    return submitPayload({
+      'device_id': deviceId,
+      'feedback_type': type.apiValue,
+      'result_level': resultLevel,
+      'is_correct': isCorrect,
+      'expected_level': expectedLevel,
+      'product_barcode': productBarcode,
+      'allergen_keys': allergenKeys,
+      'comment': comment,
+      'language_code': languageCode,
+      'country_code': countryCode,
+      'app_version': appVersion,
+    });
   }
 }

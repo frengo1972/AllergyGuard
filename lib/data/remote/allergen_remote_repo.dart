@@ -1,3 +1,5 @@
+import 'package:allergyguard/domain/models/allergen.dart';
+import 'package:allergyguard/domain/models/allergen_dataset.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:allergyguard/core/allergen_patterns/allergen_pattern_engine.dart';
 
@@ -6,6 +8,49 @@ class AllergenRemoteRepository {
 
   AllergenRemoteRepository({required SupabaseClient client}) : _client = client;
   final SupabaseClient _client;
+
+  Future<AllergenDatasetInfo?> getAllergenDatasetInfo() async {
+    try {
+      final data = await _client
+          .from('app_datasets')
+          .select('version, updated_at, summary, added_keys')
+          .eq('dataset_name', 'allergens')
+          .maybeSingle();
+
+      if (data == null) return null;
+      final map = Map<String, dynamic>.from(data);
+      return AllergenDatasetInfo(
+        version: map['version'] as int? ?? 0,
+        updatedAt: DateTime.tryParse(map['updated_at'] as String? ?? ''),
+        summary: map['summary'] as String?,
+        addedKeys: (map['added_keys'] as List<dynamic>? ?? const <dynamic>[])
+            .whereType<String>()
+            .toList(growable: false),
+      );
+    } on PostgrestException {
+      return null;
+    }
+  }
+
+  Future<List<Allergen>> getActiveAllergens() async {
+    try {
+      final data = await _client
+          .from('allergens')
+          .select(
+            'id, name_key, names, search_terms, severity, eu_regulated, '
+            'icon_type, icon_emoji, icon_color, dataset_version',
+          )
+          .eq('is_active', true)
+          .order('id');
+
+      return (data as List<dynamic>)
+          .whereType<Map>()
+          .map((row) => Allergen.fromJson(Map<String, dynamic>.from(row as Map)))
+          .toList(growable: false);
+    } on PostgrestException {
+      return <Allergen>[];
+    }
+  }
 
   /// Scarica tutti i pattern verificati più recenti di una data versione.
   Future<List<ContextPattern>> getVerifiedPatterns({

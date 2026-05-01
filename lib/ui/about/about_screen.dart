@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:allergyguard/l10n/app_localizations.dart';
 
-/// Schermata informazioni: versione app, crediti, licenze, attribuzioni.
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
 
@@ -36,73 +36,63 @@ class _AboutScreenState extends State<AboutScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Informazioni')),
+      appBar: AppBar(title: Text(l10n.aboutTitle)),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 16),
         children: [
-          _Header(version: _version),
+          _Header(version: _version, l10n: l10n),
           const SizedBox(height: 24),
-          const _Disclaimer(),
+          _Disclaimer(l10n: l10n),
           const SizedBox(height: 8),
-          const _SectionHeader('Legale e privacy'),
+          _SectionHeader(l10n.aboutSectionLegal),
           ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
-            title: const Text('Informativa privacy'),
-            subtitle: const Text('Come trattiamo i dati (in breve: pochissimi)'),
+            title: Text(l10n.aboutPrivacyPolicy),
+            subtitle: Text(l10n.aboutPrivacySubtitle),
             trailing: const Icon(Icons.open_in_new, size: 18),
             onTap: () => _launch(AboutScreen.privacyPolicyUrl),
           ),
           ListTile(
             leading: const Icon(Icons.balance),
-            title: const Text('Licenza: MIT'),
-            subtitle: const Text(
-              'Codice aperto. Libero utilizzo, modifica e ridistribuzione.',
-            ),
+            title: Text(l10n.aboutLicense),
+            subtitle: Text(l10n.aboutLicenseSubtitle),
             onTap: () => showLicensePage(
               context: context,
               applicationName: 'AllergyGuard',
               applicationVersion: _version,
             ),
           ),
-          const _SectionHeader('Crediti e attribuzioni'),
+          _SectionHeader(l10n.aboutSectionCredits),
           ListTile(
             leading: const Icon(Icons.inventory_2_outlined),
             title: const Text('Open Food Facts'),
-            subtitle: const Text(
-              'Dati prodotti via barcode — licenza ODbL. '
-              'openfoodfacts.org',
-            ),
+            subtitle: Text(l10n.aboutOffSubtitle),
             trailing: const Icon(Icons.open_in_new, size: 18),
             onTap: () => _launch(AboutScreen.openFoodFactsUrl),
           ),
-          const ListTile(
-            leading: Icon(Icons.document_scanner_outlined),
-            title: Text('Google ML Kit'),
-            subtitle: Text(
-              'Riconoscimento testo e codici a barre on-device. '
-              'Nessun invio a server Google.',
-            ),
+          ListTile(
+            leading: const Icon(Icons.document_scanner_outlined),
+            title: const Text('Google ML Kit'),
+            subtitle: Text(l10n.aboutMlkitSubtitle),
           ),
-          const ListTile(
-            leading: Icon(Icons.storage_outlined),
-            title: Text('Supabase'),
-            subtitle: Text(
-              'Backend per pattern linguistici della community. '
-              'Server UE con crittografia.',
-            ),
+          ListTile(
+            leading: const Icon(Icons.storage_outlined),
+            title: const Text('Supabase'),
+            subtitle: Text(l10n.aboutSupabaseSubtitle),
           ),
-          const _SectionHeader('Contatti'),
+          _SectionHeader(l10n.aboutSectionContact),
           ListTile(
             leading: const Icon(Icons.code),
-            title: const Text('Codice sorgente'),
+            title: Text(l10n.aboutRepositoryTitle),
             subtitle: const Text('github.com/frengo1972/AllergyGuard'),
             trailing: const Icon(Icons.open_in_new, size: 18),
             onTap: () => _launch(AboutScreen.repositoryUrl),
           ),
           ListTile(
             leading: const Icon(Icons.email_outlined),
-            title: const Text('Contatto'),
+            title: Text(l10n.aboutContact),
             subtitle: const Text('allergyguard.app@gmail.com'),
             trailing: const Icon(Icons.open_in_new, size: 18),
             onTap: () => _launch('mailto:allergyguard.app@gmail.com'),
@@ -129,17 +119,19 @@ class _AboutScreenState extends State<AboutScreen> {
     final uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Impossibile aprire $url')),
+        SnackBar(content: Text(l10n.aboutLaunchError(url))),
       );
     }
   }
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.version});
+  const _Header({required this.version, required this.l10n});
 
   final String version;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +169,7 @@ class _Header extends StatelessWidget {
           if (version.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
-              'Versione $version',
+              '${l10n.aboutVersion} $version',
               style: theme.textTheme.labelSmall,
             ),
           ],
@@ -188,8 +180,9 @@ class _Header extends StatelessWidget {
 }
 
 class _Disclaimer extends StatelessWidget {
-  const _Disclaimer();
+  const _Disclaimer({required this.l10n});
 
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -210,10 +203,7 @@ class _Disclaimer extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'AllergyGuard è uno strumento di supporto alle decisioni. '
-                'NON è un dispositivo medico né una certificazione di sicurezza. '
-                'Leggi sempre le etichette e consulta un medico per diagnosi '
-                'o gestione delle allergie.',
+                l10n.aboutDisclaimer,
                 style: theme.textTheme.bodySmall,
               ),
             ),

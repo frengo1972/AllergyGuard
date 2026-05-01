@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:allergyguard/l10n/app_localizations.dart';
 
-/// Disclaimer obbligatorio da mostrare in ogni schermata di risultato.
 class DisclaimerWidget extends StatelessWidget {
   const DisclaimerWidget({super.key});
 
@@ -14,16 +14,14 @@ class DisclaimerWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.amber.shade200),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.info_outline, color: Colors.amber, size: 20),
-          SizedBox(width: 8),
+          const Icon(Icons.info_outline, color: Colors.amber, size: 20),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Questo risultato è indicativo. Verificare sempre con il '
-              'produttore in caso di allergie gravi. L\'app non sostituisce '
-              'il parere medico.',
-              style: TextStyle(fontSize: 12, color: Colors.black87),
+              AppLocalizations.of(context).disclaimerShort,
+              style: const TextStyle(fontSize: 12, color: Colors.black87),
             ),
           ),
         ],

@@ -1,27 +1,25 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:allergyguard/data/local/local_preferences_service.dart';
+import 'package:allergyguard/data/feedback/feedback_submission_service.dart';
 import 'package:allergyguard/data/remote/feedback_remote_repo.dart';
+import 'package:allergyguard/l10n/app_localizations.dart';
 import 'package:allergyguard/providers.dart';
 
-/// Schermata feedback utente.
-///
-/// Raccoglie in forma anonima:
-/// - Tipo di feedback (suggerimento, bug, generale, accuratezza scansione)
-/// - Commento libero
-/// - Opzionale: se il risultato di una scansione era corretto + livello atteso
 class FeedbackScreen extends ConsumerStatefulWidget {
   const FeedbackScreen({
     super.key,
     this.prefilledResultLevel,
     this.prefilledBarcode,
     this.prefilledAllergenKeys = const <String>[],
+    this.initialIsCorrect,
   });
 
   final String? prefilledResultLevel;
   final String? prefilledBarcode;
   final List<String> prefilledAllergenKeys;
+  final bool? initialIsCorrect;
 
   @override
   ConsumerState<FeedbackScreen> createState() => _FeedbackScreenState();
@@ -29,7 +27,6 @@ class FeedbackScreen extends ConsumerStatefulWidget {
 
 class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
   final _commentController = TextEditingController();
-  final _prefs = LocalPreferencesService();
 
   FeedbackType _selectedType = FeedbackType.general;
   bool? _isCorrect;
@@ -42,6 +39,8 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
     if (widget.prefilledResultLevel != null) {
       _selectedType = FeedbackType.scanAccuracy;
     }
+    _isCorrect = widget.initialIsCorrect;
+    unawaited(ref.read(feedbackSubmissionServiceProvider).flushPending());
   }
 
   @override
@@ -53,32 +52,31 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Lascia un feedback')),
+      appBar: AppBar(title: Text(l10n.feedbackTitle)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const _InfoCard(
+              _InfoCard(
                 icon: Icons.lock_outline,
-                text:
-                    'Il feedback è completamente anonimo. Non raccogliamo '
-                    'nome, email o posizione. Solo un ID casuale per evitare '
-                    'duplicati.',
+                text: l10n.feedbackAnonymousNotice,
               ),
               const SizedBox(height: 20),
-              Text('Tipo di feedback', style: theme.textTheme.titleMedium),
+              Text(l10n.feedbackTypeLabel, style: theme.textTheme.titleMedium),
               const SizedBox(height: 8),
               _FeedbackTypeSelector(
                 selected: _selectedType,
                 onChanged: (type) => setState(() => _selectedType = type),
+                l10n: l10n,
               ),
               if (_selectedType == FeedbackType.scanAccuracy) ...[
                 const SizedBox(height: 24),
                 Text(
-                  'Il risultato della scansione era corretto?',
+                  l10n.feedbackWasCorrectQuestion,
                   style: theme.textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),
@@ -86,7 +84,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                   children: [
                     Expanded(
                       child: _ChoiceChip(
-                        label: 'Sì, corretto',
+                        label: l10n.feedbackWasCorrectYes,
                         icon: Icons.check_circle,
                         color: Colors.green,
                         selected: _isCorrect == true,
@@ -99,7 +97,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _ChoiceChip(
-                        label: 'No, sbagliato',
+                        label: l10n.feedbackWasCorrectNo,
                         icon: Icons.cancel,
                         color: Colors.red,
                         selected: _isCorrect == false,
@@ -111,7 +109,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                 if (_isCorrect == false) ...[
                   const SizedBox(height: 16),
                   Text(
-                    'Quale sarebbe stato il risultato corretto?',
+                    l10n.feedbackExpectedQuestion,
                     style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
@@ -119,11 +117,13 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                     selected: _expectedLevel,
                     onChanged: (level) =>
                         setState(() => _expectedLevel = level),
+                    l10n: l10n,
                   ),
                 ],
               ],
               const SizedBox(height: 24),
-              Text('Commento', style: theme.textTheme.titleMedium),
+              Text(l10n.feedbackCommentLabel,
+                  style: theme.textTheme.titleMedium),
               const SizedBox(height: 8),
               TextField(
                 controller: _commentController,
@@ -131,7 +131,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                 maxLines: 8,
                 maxLength: 500,
                 decoration: InputDecoration(
-                  hintText: _commentHint,
+                  hintText: _commentHint(l10n),
                   border: const OutlineInputBorder(),
                   filled: true,
                 ),
@@ -146,7 +146,9 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.send),
-                label: Text(_submitting ? 'Invio...' : 'Invia feedback'),
+                label: Text(
+                  _submitting ? l10n.commonSending : l10n.feedbackSubmit,
+                ),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
@@ -154,7 +156,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
               const SizedBox(height: 12),
               Center(
                 child: Text(
-                  'Se ti piace l\'app, lascia una recensione sullo store!',
+                  l10n.feedbackStoreReviewCta,
                   style: theme.textTheme.bodySmall,
                   textAlign: TextAlign.center,
                 ),
@@ -166,51 +168,35 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
     );
   }
 
-  String get _commentHint {
+  String _commentHint(AppLocalizations l10n) {
     switch (_selectedType) {
       case FeedbackType.scanAccuracy:
-        return 'Descrivi cosa hai scansionato e cosa ti aspettavi...';
+        return l10n.feedbackCommentHintScanAccuracy;
       case FeedbackType.suggestion:
-        return 'Quale funzionalità vorresti vedere nell\'app?';
+        return l10n.feedbackCommentHintSuggestion;
       case FeedbackType.bugReport:
-        return 'Descrivi il problema riscontrato. Cosa hai fatto prima che accadesse?';
+        return l10n.feedbackCommentHintBugReport;
       case FeedbackType.general:
-        return 'Raccontaci cosa pensi dell\'app...';
+        return l10n.feedbackCommentHintGeneral;
     }
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context);
     if (_commentController.text.trim().isEmpty &&
         _selectedType != FeedbackType.scanAccuracy) {
-      _snack('Scrivi un commento prima di inviare.');
+      _snack(l10n.feedbackNeedComment);
       return;
     }
     if (_selectedType == FeedbackType.scanAccuracy && _isCorrect == null) {
-      _snack('Indica se il risultato della scansione era corretto.');
+      _snack(l10n.feedbackNeedCorrectness);
       return;
     }
 
     setState(() => _submitting = true);
 
-    final repo = ref.read(feedbackRemoteRepoProvider);
-    if (!repo.isConfigured) {
-      if (!mounted) return;
-      setState(() => _submitting = false);
-      _snack(
-        'Backend non configurato. Il feedback verrà inviato quando disponibile.',
-      );
-      return;
-    }
-
-    final deviceId = await _prefs.getOrCreateDeviceId();
-    final languageCode = await _prefs.getInterfaceLanguage();
-    final packageInfo = await PackageInfo.fromPlatform();
-    final countryCode = WidgetsBinding
-            .instance.platformDispatcher.locale.countryCode ??
-        '';
-
-    final success = await repo.submit(
-      deviceId: deviceId,
+    final submissionService = ref.read(feedbackSubmissionServiceProvider);
+    final outcome = await submissionService.submit(
       type: _selectedType,
       resultLevel: widget.prefilledResultLevel,
       isCorrect: _isCorrect,
@@ -218,28 +204,23 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
       productBarcode: widget.prefilledBarcode,
       allergenKeys: widget.prefilledAllergenKeys,
       comment: _commentController.text.trim(),
-      languageCode: languageCode,
-      countryCode: countryCode,
-      appVersion: '${packageInfo.version}+${packageInfo.buildNumber}',
     );
 
     if (!mounted) return;
     setState(() => _submitting = false);
 
-    if (success) {
+    if (outcome == FeedbackSubmitOutcome.submitted ||
+        outcome == FeedbackSubmitOutcome.queued) {
       await showDialog<void>(
         context: context,
         builder: (dialogContext) => AlertDialog(
           icon: const Icon(Icons.favorite, color: Colors.red, size: 40),
-          title: const Text('Grazie!'),
-          content: const Text(
-            'Il tuo feedback ci aiuta a migliorare AllergyGuard. '
-            'Ogni segnalazione viene letta e presa in considerazione.',
-          ),
+          title: Text(l10n.feedbackThankYouTitle),
+          content: Text(l10n.feedbackThankYouBody),
           actions: [
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Chiudi'),
+              child: Text(l10n.commonClose),
             ),
           ],
         ),
@@ -247,7 +228,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } else {
-      _snack('Errore di invio. Riprova più tardi.');
+      _snack(l10n.feedbackSubmitError);
     }
   }
 
@@ -294,10 +275,12 @@ class _FeedbackTypeSelector extends StatelessWidget {
   const _FeedbackTypeSelector({
     required this.selected,
     required this.onChanged,
+    required this.l10n,
   });
 
   final FeedbackType selected;
   final ValueChanged<FeedbackType> onChanged;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -321,13 +304,13 @@ class _FeedbackTypeSelector extends StatelessWidget {
   String _labelFor(FeedbackType type) {
     switch (type) {
       case FeedbackType.scanAccuracy:
-        return 'Accuratezza scansione';
+        return l10n.feedbackTypeScanAccuracy;
       case FeedbackType.suggestion:
-        return 'Suggerimento';
+        return l10n.feedbackTypeSuggestion;
       case FeedbackType.bugReport:
-        return 'Segnala bug';
+        return l10n.feedbackTypeBugReport;
       case FeedbackType.general:
-        return 'Commento generale';
+        return l10n.feedbackTypeGeneral;
     }
   }
 
@@ -391,24 +374,25 @@ class _ExpectedLevelPicker extends StatelessWidget {
   const _ExpectedLevelPicker({
     required this.selected,
     required this.onChanged,
+    required this.l10n,
   });
 
   final String? selected;
   final ValueChanged<String> onChanged;
-
-  static const _options = [
-    ('danger', 'Pericoloso', Colors.red),
-    ('warning', 'Attenzione', Colors.orange),
-    ('safe', 'Sicuro', Colors.green),
-    ('unknown', 'Non determinabile', Colors.grey),
-  ];
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
+    final options = <(String, String, Color)>[
+      ('danger', l10n.feedbackExpectedDanger, Colors.red),
+      ('warning', l10n.feedbackExpectedWarning, Colors.orange),
+      ('safe', l10n.feedbackExpectedSafe, Colors.green),
+      ('unknown', l10n.feedbackExpectedUnknown, Colors.grey),
+    ];
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: _options.map((option) {
+      children: options.map((option) {
         final (value, label, color) = option;
         final isSelected = value == selected;
         return ChoiceChip(

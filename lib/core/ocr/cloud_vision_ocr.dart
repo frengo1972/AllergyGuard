@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:convert';
 import 'package:camera/camera.dart';
 import 'package:dio/dio.dart';
@@ -6,7 +7,6 @@ import 'ocr_service.dart';
 /// Implementazione OCR cloud con Google Cloud Vision API.
 /// Usato come fallback quando ML Kit ha confidence < 60%.
 class CloudVisionOcr {
-
   CloudVisionOcr({
     required Dio dio,
     required String apiKey,
@@ -61,8 +61,7 @@ class CloudVisionOcr {
   }
 
   Future<List<int>> _readFileBytes(String filePath) async {
-    final file = await Future.value(filePath);
-    // TODO: Leggere file bytes dal path
-    return [];
+    final file = File(filePath);
+    return file.readAsBytes();
   }
 }

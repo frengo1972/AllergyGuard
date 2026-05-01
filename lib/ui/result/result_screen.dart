@@ -4,10 +4,15 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:allergyguard/core/tts/tts_service.dart';
+import 'package:allergyguard/data/feedback/feedback_submission_service.dart';
 import 'package:allergyguard/data/local/local_scan_repository.dart';
 import 'package:allergyguard/data/local/local_preferences_service.dart';
+import 'package:allergyguard/data/remote/feedback_remote_repo.dart';
 import 'package:allergyguard/domain/models/scan_result.dart';
+import 'package:allergyguard/l10n/app_localizations.dart';
+import 'package:allergyguard/providers.dart';
 import 'package:allergyguard/ui/common/app_colors.dart';
 import 'package:allergyguard/ui/common/disclaimer_widget.dart';
 import 'package:allergyguard/ui/feedback/feedback_screen.dart';
@@ -21,15 +26,15 @@ import 'package:allergyguard/ui/feedback/feedback_screen.dart';
 /// - Disclaimer visibile
 /// - Bottone 'Segnala errore' e 'Salva'
 /// - TTS automatico all'apertura
-class ResultScreen extends StatefulWidget {
+class ResultScreen extends ConsumerStatefulWidget {
   const ResultScreen({super.key, required this.result});
   final ScanResult result;
 
   @override
-  State<ResultScreen> createState() => _ResultScreenState();
+  ConsumerState<ResultScreen> createState() => _ResultScreenState();
 }
 
-class _ResultScreenState extends State<ResultScreen> {
+class _ResultScreenState extends ConsumerState<ResultScreen> {
   final LocalPreferencesService _preferences = LocalPreferencesService();
   final LocalScanRepository _scanRepository = LocalScanRepository();
   final TtsService _ttsService = TtsService();
@@ -38,12 +43,15 @@ class _ResultScreenState extends State<ResultScreen> {
   bool _isAutoPlayEnabled = true;
   TtsSpeed _ttsSpeed = TtsSpeed.normal;
   bool _isTtsReady = false;
+  bool _isSubmittingPositiveFeedback = false;
+  bool _hasSubmittedPositiveFeedback = false;
 
   @override
   void initState() {
     super.initState();
     _triggerHapticFeedback();
     unawaited(_initializeTts());
+    unawaited(ref.read(feedbackSubmissionServiceProvider).flushPending());
   }
 
   void _triggerHapticFeedback() {
@@ -82,6 +90,11 @@ class _ResultScreenState extends State<ResultScreen> {
             _buildResultIcon(),
             const SizedBox(height: 16),
             _buildResultTitle(),
+            if (widget.result.referenceImagePath != null &&
+                _previewableMatches.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _buildZoomedMatchesSection(),
+            ],
             if (widget.result.productName != null) ...[
               const SizedBox(height: 8),
               _buildProductInfo(),
@@ -96,11 +109,8 @@ class _ResultScreenState extends State<ResultScreen> {
             ],
             const SizedBox(height: 16),
             const DisclaimerWidget(),
-            if (widget.result.level == ScanResultLevel.danger ||
-                widget.result.level == ScanResultLevel.warning) ...[
-              const SizedBox(height: 12),
-              _buildFeedbackCta(),
-            ],
+            const SizedBox(height: 12),
+            _buildFeedbackCard(),
             const SizedBox(height: 16),
             _buildLabelAccordion(),
             const SizedBox(height: 16),
@@ -123,11 +133,12 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   Widget _buildResultTitle() {
+    final l10n = AppLocalizations.of(context);
     final title = switch (widget.result.level) {
-      ScanResultLevel.danger => 'PERICOLO',
-      ScanResultLevel.warning => 'ATTENZIONE',
-      ScanResultLevel.safe => 'APPARENTEMENTE SICURO',
-      ScanResultLevel.unknown => 'NON VERIFICABILE',
+      ScanResultLevel.danger => l10n.resultLevelDanger,
+      ScanResultLevel.warning => l10n.resultLevelWarning,
+      ScanResultLevel.safe => l10n.resultLevelSafe,
+      ScanResultLevel.unknown => l10n.resultLevelUnknown,
     };
 
     return Text(
@@ -171,9 +182,9 @@ class _ResultScreenState extends State<ResultScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Allergeni rilevati:',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              AppLocalizations.of(context).resultAllergensDetected,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             ...widget.result.allergens.map((a) => Padding(
@@ -192,52 +203,198 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
-  Widget _buildFeedbackCta() {
-    return Material(
-      color: Colors.white.withValues(alpha: 0.15),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: _openFeedback,
-        borderRadius: BorderRadius.circular(12),
-        child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              Icon(Icons.rate_review_outlined, color: Colors.white),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Il risultato era sbagliato? Aiutaci a migliorare',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+  List<ScanResultMatch> get _previewableMatches => widget.result.matches
+      .where((match) => match.boundingBox != null)
+      .toList(growable: false);
+
+  Widget _buildZoomedMatchesSection() {
+    final l10n = AppLocalizations.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.resultZoomedArea,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
               ),
-              Icon(Icons.chevron_right, color: Colors.white),
-            ],
-          ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 244,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _previewableMatches.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (context, index) {
+                  final match = _previewableMatches[index];
+                  return SizedBox(
+                    width: 260,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          match.localizedAllergenName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '"${match.matchedText}"',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: Colors.grey.shade700),
+                        ),
+                        const SizedBox(height: 10),
+                        Expanded(
+                          child: _MatchPreview(
+                            imagePath: widget.result.referenceImagePath!,
+                            match: match,
+                            showTitle: false,
+                            previewHeight: 180,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Future<void> _openFeedback() async {
+  Widget _buildFeedbackCard() {
+    final l10n = AppLocalizations.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.feedbackWasCorrectQuestion,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: (_isSubmittingPositiveFeedback ||
+                            _hasSubmittedPositiveFeedback)
+                        ? null
+                        : _submitPositiveFeedback,
+                    icon: _isSubmittingPositiveFeedback
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Icon(
+                            _hasSubmittedPositiveFeedback
+                                ? Icons.check_circle
+                                : Icons.thumb_up_alt_outlined,
+                          ),
+                    label: Text(
+                      _isSubmittingPositiveFeedback
+                          ? l10n.commonSending
+                          : l10n.feedbackWasCorrectYes,
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _hasSubmittedPositiveFeedback
+                          ? const Color(0xFF2E7D32)
+                          : null,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openFeedback(initialIsCorrect: false),
+                    icon: const Icon(Icons.thumb_down_alt_outlined),
+                    label: Text(l10n.feedbackWasCorrectNo),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            TextButton.icon(
+              onPressed: () => _openFeedback(),
+              icon: const Icon(Icons.rate_review_outlined),
+              label: Text(l10n.resultFeedbackCta),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submitPositiveFeedback() async {
+    final l10n = AppLocalizations.of(context);
+    setState(() => _isSubmittingPositiveFeedback = true);
+
+    final submissionService = ref.read(feedbackSubmissionServiceProvider);
+    final outcome = await submissionService.submit(
+      type: FeedbackType.scanAccuracy,
+      resultLevel: widget.result.level.name,
+      isCorrect: true,
+      productBarcode: widget.result.barcode,
+      allergenKeys: widget.result.allergens,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _isSubmittingPositiveFeedback = false;
+      _hasSubmittedPositiveFeedback =
+          outcome == FeedbackSubmitOutcome.submitted ||
+              outcome == FeedbackSubmitOutcome.queued;
+    });
+
+    if (_hasSubmittedPositiveFeedback) {
+      _snack(l10n.feedbackThankYouTitle);
+    } else {
+      _snack(l10n.feedbackSubmitError);
+    }
+  }
+
+  Future<void> _openFeedback({bool? initialIsCorrect}) async {
     await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => FeedbackScreen(
           prefilledResultLevel: widget.result.level.name,
           prefilledBarcode: widget.result.barcode,
           prefilledAllergenKeys: widget.result.allergens,
+          initialIsCorrect: initialIsCorrect,
         ),
       ),
+    );
+  }
+
+  void _snack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 
   Widget _buildLabelAccordion() {
     return Card(
       child: ExpansionTile(
-        title: const Text('Testo etichetta completo'),
+        title: Text(AppLocalizations.of(context).resultLabelAccordion),
         initiallyExpanded: _isLabelExpanded,
         onExpansionChanged: (v) => setState(() => _isLabelExpanded = v),
         children: [
@@ -254,6 +411,7 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   Widget _buildMatchesList() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: widget.result.matches
@@ -277,7 +435,9 @@ class _ResultScreenState extends State<ResultScreen> {
                           ),
                         ),
                         _buildMatchChip(
-                          match.isPartial ? 'Match parziale' : 'Match completo',
+                          match.isPartial
+                              ? l10n.resultPartialMatch
+                              : l10n.resultFullMatch,
                           color: match.isPartial
                               ? const Color(0xFFFFF3CD)
                               : const Color(0xFFD1E7DD),
@@ -290,7 +450,7 @@ class _ResultScreenState extends State<ResultScreen> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Riconosciuto: "${match.matchedText}"',
+                      '${l10n.resultRecognizedPrefix} "${match.matchedText}"',
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 6),
@@ -301,9 +461,9 @@ class _ResultScreenState extends State<ResultScreen> {
                               height: 1.4,
                             ),
                         children: [
-                          const TextSpan(
-                            text: 'Trovato in: ',
-                            style: TextStyle(fontWeight: FontWeight.w600),
+                          TextSpan(
+                            text: '${l10n.resultFoundInPrefix} ',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                           _buildHighlightedContainingText(match),
                         ],
@@ -314,16 +474,8 @@ class _ResultScreenState extends State<ResultScreen> {
                             match.containingText.trim()) ...[
                       const SizedBox(height: 6),
                       Text(
-                        'Contesto OCR: ${match.lineText}',
+                        '${l10n.resultOcrContext} ${match.lineText}',
                         style: TextStyle(color: Colors.grey.shade700),
-                      ),
-                    ],
-                    if (widget.result.referenceImagePath != null &&
-                        match.boundingBox != null) ...[
-                      const SizedBox(height: 12),
-                      _MatchPreview(
-                        imagePath: widget.result.referenceImagePath!,
-                        match: match,
                       ),
                     ],
                   ],
@@ -387,14 +539,17 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   Widget _buildActionButtons() {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         Expanded(
           child: OutlinedButton.icon(
             onPressed: _showReportDialog,
             icon: const Icon(Icons.flag, color: Colors.white),
-            label: const Text('Segnala errore',
-                style: TextStyle(color: Colors.white)),
+            label: Text(
+              l10n.resultReportError,
+              style: const TextStyle(color: Colors.white),
+            ),
             style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Colors.white)),
           ),
@@ -404,7 +559,7 @@ class _ResultScreenState extends State<ResultScreen> {
           child: ElevatedButton.icon(
             onPressed: _saveToHistory,
             icon: const Icon(Icons.save),
-            label: const Text('Salva'),
+            label: Text(l10n.commonSave),
           ),
         ),
       ],
@@ -454,13 +609,14 @@ class _ResultScreenState extends State<ResultScreen> {
     await _scanRepository.saveScan(widget.result);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Risultato salvato nello storico'),
+      SnackBar(
+        content: Text(AppLocalizations.of(context).resultSaveToHistory),
       ),
     );
   }
 
   Future<void> _showReportDialog() async {
+    final l10n = AppLocalizations.of(context);
     final noteController = TextEditingController();
     var selectedType = 'wrong_detection';
 
@@ -470,27 +626,27 @@ class _ResultScreenState extends State<ResultScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Segnala un problema'),
+              title: Text(l10n.resultReportDialogTitle),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   DropdownButtonFormField<String>(
                     initialValue: selectedType,
-                    decoration: const InputDecoration(
-                      labelText: 'Tipo segnalazione',
+                    decoration: InputDecoration(
+                      labelText: l10n.resultReportTypeLabel,
                     ),
-                    items: const [
+                    items: [
                       DropdownMenuItem(
                         value: 'wrong_detection',
-                        child: Text('Rilevamento errato'),
+                        child: Text(l10n.resultReportWrongDetection),
                       ),
                       DropdownMenuItem(
                         value: 'missing_allergen',
-                        child: Text('Allergene non rilevato'),
+                        child: Text(l10n.resultReportMissingAllergen),
                       ),
                       DropdownMenuItem(
                         value: 'ocr_problem',
-                        child: Text('Problema OCR'),
+                        child: Text(l10n.resultReportOcrProblem),
                       ),
                     ],
                     onChanged: (value) {
@@ -502,10 +658,10 @@ class _ResultScreenState extends State<ResultScreen> {
                   TextField(
                     controller: noteController,
                     maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Nota facoltativa',
-                      hintText: 'Descrivi cosa non ti convince',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.resultReportOptionalNote,
+                      hintText: l10n.resultReportNoteHint,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 ],
@@ -513,11 +669,11 @@ class _ResultScreenState extends State<ResultScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(false),
-                  child: const Text('Annulla'),
+                  child: Text(l10n.commonCancel),
                 ),
                 FilledButton(
                   onPressed: () => Navigator.of(dialogContext).pop(true),
-                  child: const Text('Salva segnalazione'),
+                  child: Text(l10n.resultReportSaveAction),
                 ),
               ],
             );
@@ -535,8 +691,8 @@ class _ResultScreenState extends State<ResultScreen> {
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Segnalazione salvata localmente'),
+      SnackBar(
+        content: Text(AppLocalizations.of(context).resultReportSaved),
       ),
     );
   }
@@ -620,10 +776,14 @@ class _MatchPreview extends StatelessWidget {
   const _MatchPreview({
     required this.imagePath,
     required this.match,
+    this.showTitle = true,
+    this.previewHeight = 180,
   });
 
   final String imagePath;
   final ScanResultMatch match;
+  final bool showTitle;
+  final double previewHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -646,17 +806,19 @@ class _MatchPreview extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Area immagine ingrandita',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
+            if (showTitle) ...[
+              Text(
+                AppLocalizations.of(context).resultZoomedArea,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+            ],
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: ColoredBox(
                 color: Colors.black,
                 child: SizedBox(
-                  height: 180,
+                  height: previewHeight,
                   width: double.infinity,
                   child: LayoutBuilder(
                     builder: (context, constraints) {

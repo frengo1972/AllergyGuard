@@ -8,7 +8,9 @@ import 'package:allergyguard/core/ocr/mlkit_ocr.dart';
 import 'package:allergyguard/core/ocr/cloud_vision_ocr.dart';
 import 'package:allergyguard/core/scanner/barcode_scanner.dart';
 import 'package:allergyguard/core/scanner/open_food_facts_client.dart';
+import 'package:allergyguard/core/scanner/product_image_ocr_service.dart';
 import 'package:allergyguard/core/tts/tts_service.dart';
+import 'package:allergyguard/data/feedback/feedback_submission_service.dart';
 import 'package:allergyguard/data/remote/allergen_remote_repo.dart';
 import 'package:allergyguard/data/remote/feedback_remote_repo.dart';
 
@@ -61,6 +63,14 @@ final openFoodFactsProvider = Provider<OpenFoodFactsClient>((ref) {
   return OpenFoodFactsClient(dio: ref.watch(dioProvider));
 });
 
+/// Provider OCR per immagini etichetta provenienti da Open Food Facts.
+final productImageOcrServiceProvider = Provider<ProductImageOcrService>((ref) {
+  return ProductImageOcrService(
+    dio: ref.watch(dioProvider),
+    ocrService: ref.watch(ocrServiceProvider),
+  );
+});
+
 /// Provider TTS Service
 final ttsServiceProvider = Provider<TtsService>((ref) {
   return TtsService();
@@ -74,4 +84,12 @@ final allergenRemoteRepoProvider = Provider<AllergenRemoteRepository>((ref) {
 /// Provider Feedback Remote Repository (accetta backend opzionale).
 final feedbackRemoteRepoProvider = Provider<FeedbackRemoteRepository>((ref) {
   return FeedbackRemoteRepository(client: ref.watch(optionalSupabaseProvider));
+});
+
+/// Provider servizio invio/queue feedback.
+final feedbackSubmissionServiceProvider =
+    Provider<FeedbackSubmissionService>((ref) {
+  return FeedbackSubmissionService(
+    remoteRepository: ref.watch(feedbackRemoteRepoProvider),
+  );
 });
