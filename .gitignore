@@ -31,6 +31,8 @@ ios/Pods/
 ios/.symlinks/
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
 ios/Runner.xcworkspace/
 macos/Pods/
 macos/Flutter/Flutter-Debug.xcconfig
