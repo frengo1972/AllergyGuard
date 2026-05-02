@@ -56,23 +56,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: l10n.historySearchHint,
-                prefixIcon: const Icon(Icons.search),
-                border: const OutlineInputBorder(),
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: l10n.historySearchHint,
+                  prefixIcon: const Icon(Icons.search),
+                  border: const OutlineInputBorder(),
+                ),
+                onChanged: (q) => setState(() => _searchQuery = q),
               ),
-              onChanged: (q) => setState(() => _searchQuery = q),
             ),
-          ),
-          Expanded(
-            child: _buildHistoryList(),
-          ),
-        ],
+            Expanded(
+              child: _buildHistoryList(),
+            ),
+          ],
+        ),
       ),
     );
   }

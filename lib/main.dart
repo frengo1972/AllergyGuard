@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:allergyguard/core/locale/locale_provider.dart';
+import 'package:allergyguard/core/theme/text_scale_provider.dart';
 import 'package:allergyguard/l10n/app_localizations.dart';
 import 'package:allergyguard/providers.dart';
 import 'package:allergyguard/ui/onboarding/onboarding_screen.dart';
@@ -52,6 +53,7 @@ class AllergyGuardApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(localeControllerProvider);
+    final textScale = ref.watch(textScaleControllerProvider);
     return MaterialApp(
       title: 'AllergyGuard',
       debugShowCheckedModeBanner: false,
@@ -61,6 +63,15 @@ class AllergyGuardApp extends ConsumerWidget {
       locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) {
+        final media = MediaQuery.of(context);
+        return MediaQuery(
+          data: media.copyWith(
+            textScaler: TextScaler.linear(textScale.factor),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       home: const _AppEntryPoint(),
     );
   }

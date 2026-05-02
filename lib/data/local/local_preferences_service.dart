@@ -27,6 +27,7 @@ class LocalPreferencesService {
   static const String pendingFeedbackKey = 'pending_feedback';
   static const String deviceIdKey = 'device_id';
   static const String communityLearningKey = 'community_learning_enabled';
+  static const String textScaleKey = 'text_scale';
   static const String cachedRemoteAllergensKey = 'cached_remote_allergens';
   static const String cachedRemoteAllergensVersionKey =
       'cached_remote_allergens_version';
@@ -197,6 +198,16 @@ class LocalPreferencesService {
   Future<void> setPendingFeedbackJson(List<String> items) async {
     final prefs = await _prefs;
     await prefs.setStringList(pendingFeedbackKey, items);
+  }
+
+  Future<String> getTextScaleName() async {
+    final prefs = await _prefs;
+    return prefs.getString(textScaleKey) ?? 'medium';
+  }
+
+  Future<void> setTextScaleName(String value) async {
+    final prefs = await _prefs;
+    await prefs.setString(textScaleKey, value);
   }
 
   Future<bool> isCommunityLearningEnabled() async {

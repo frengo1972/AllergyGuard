@@ -40,7 +40,12 @@ class _AboutScreenState extends State<AboutScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.aboutTitle)),
       body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: EdgeInsets.fromLTRB(
+          0,
+          16,
+          0,
+          16 + MediaQuery.of(context).padding.bottom,
+        ),
         children: [
           _Header(version: _version, l10n: l10n),
           const SizedBox(height: 24),
