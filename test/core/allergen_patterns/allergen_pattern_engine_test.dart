@@ -223,6 +223,120 @@ void main() {
       );
       expect(result.allergens, isEmpty);
     });
+
+    test('IT "non contiene arachidi" does not trigger peanut', () {
+      final engine = buildEngine();
+      final result = engine.analyze(
+        ocrText: 'Prodotto naturale. Non contiene arachidi.',
+        userAllergenKeys: ['peanut'],
+      );
+      expect(result.allergens, isEmpty);
+    });
+
+    test('IT "non contengono soia" does not trigger soy', () {
+      final engine = buildEngine();
+      final result = engine.analyze(
+        ocrText: 'Gli ingredienti non contengono soia ne derivati.',
+        userAllergenKeys: ['soy'],
+      );
+      expect(result.allergens, isEmpty);
+    });
+
+    test('EN "does not contain peanuts" does not trigger peanut', () {
+      final engine = buildEngine();
+      final result = engine.analyze(
+        ocrText: 'This snack does not contain peanuts.',
+        userAllergenKeys: ['peanut'],
+      );
+      expect(result.allergens, isEmpty);
+    });
+
+    test('EN "contains no milk" does not trigger milk', () {
+      final engine = buildEngine();
+      final result = engine.analyze(
+        ocrText: 'Vegan product: contains no milk or dairy.',
+        userAllergenKeys: ['milk'],
+      );
+      expect(result.allergens, isEmpty);
+    });
+
+    test('DE "enthält keine Milch" does not trigger milk', () {
+      final engine = buildEngine();
+      final result = engine.analyze(
+        ocrText: 'Vegane Schokolade. Enthält keine Milch.',
+        userAllergenKeys: ['milk'],
+      );
+      expect(result.allergens, isEmpty);
+    });
+
+    test('FR "ne contient pas de lait" does not trigger milk', () {
+      final engine = buildEngine();
+      final result = engine.analyze(
+        ocrText: 'Ce produit ne contient pas de lait.',
+        userAllergenKeys: ['milk'],
+      );
+      expect(result.allergens, isEmpty);
+    });
+
+    test('ES "no contiene gluten" does not trigger gluten', () {
+      final engine = buildEngine();
+      final result = engine.analyze(
+        ocrText: 'Apto para celiacos: no contiene gluten.',
+        userAllergenKeys: ['gluten'],
+      );
+      expect(result.allergens, isEmpty);
+    });
+
+    test('PT "não contém milk" treated as negation', () {
+      final engine = buildEngine();
+      final result = engine.analyze(
+        ocrText: 'Produto vegano. Não contém milk no produto.',
+        userAllergenKeys: ['milk'],
+      );
+      expect(result.allergens, isEmpty);
+    });
+
+    test('ZH "不含" before 麸质 does not trigger gluten', () {
+      final engine = AllergenPatternEngine(
+        verifiedPatterns: sectionPatterns,
+        allergenNames: <String, List<String>>{
+          'gluten': <String>['gluten', '麸质'],
+        },
+      );
+      final result = engine.analyze(
+        ocrText: '本产品不含麸质。',
+        userAllergenKeys: ['gluten'],
+      );
+      expect(result.allergens, isEmpty);
+    });
+
+    test('JA "含みません" after ピーナッツ does not trigger peanut', () {
+      final engine = AllergenPatternEngine(
+        verifiedPatterns: sectionPatterns,
+        allergenNames: <String, List<String>>{
+          'peanut': <String>['peanut', 'ピーナッツ'],
+        },
+      );
+      final result = engine.analyze(
+        ocrText: 'この商品はピーナッツを含みません。',
+        userAllergenKeys: ['peanut'],
+      );
+      expect(result.allergens, isEmpty);
+    });
+
+    test('KO "포함하지 않음" near 우유 does not trigger milk', () {
+      final engine = AllergenPatternEngine(
+        verifiedPatterns: sectionPatterns,
+        allergenNames: <String, List<String>>{
+          'milk': <String>['milk', '우유'],
+        },
+      );
+      final result = engine.analyze(
+        ocrText: '비건 제품. 우유 포함하지 않음.',
+        userAllergenKeys: ['milk'],
+      );
+      expect(result.allergens, isEmpty);
+    });
   });
 
   group('result levels', () {

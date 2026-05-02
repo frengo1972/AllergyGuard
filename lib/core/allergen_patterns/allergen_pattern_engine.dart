@@ -198,29 +198,126 @@ class AllergenPatternEngine {
   }
 
   static const _negationPhrases = [
+    // Italiano
     'senza',
     'privo di',
     'privi di',
     'priva di',
     'prive di',
+    'non contiene',
+    'non contengono',
+    "non c'e",
+    "non c'è",
+    'non ci sono',
+    'esente da',
+    'esenti da',
+    // Inglese
     'without',
     'free from',
     'free of',
     'no added',
+    'does not contain',
+    'do not contain',
+    'contains no',
+    'contain no',
+    'no traces of',
+    // Tedesco
     'ohne',
     'frei von',
+    'enthalt kein',
+    'enthalt keine',
+    'enthält kein',
+    'enthält keine',
+    'kein zusatz von',
+    // Francese
     'sans',
+    'ne contient pas',
+    'ne contiennent pas',
+    'exempt de',
+    'exempte de',
+    'exempts de',
+    'exemptes de',
+    // Spagnolo
     'sin',
     'libre de',
+    'no contiene',
+    'no contienen',
+    'exento de',
+    'exenta de',
+    // Portoghese
     'sem',
     'livre de',
+    'nao contem',
+    'não contém',
+    'nao contêm',
+    'não contêm',
+    'isento de',
+    // Olandese
     'zonder',
+    'bevat geen',
+    // Polacco/Ceco/Slovacco
     'bez',
+    'nie zawiera',
+    'neobsahuje',
+    // Turco
+    'icermez',
+    'içermez',
+    'icermiyor',
+    'içermiyor',
+    // Svedese / Danese / Norvegese
+    'utan',
+    'uden',
+    'fri fra',
+    'fri for',
+    'fri från',
+    // Finlandese
+    'ilman',
+    'vapaa',
+    // Russo
+    'без',
+    'не содержит',
+    // Arabo
+    'خال من',
+    'خالي من',
+    'بدون',
+    'لا يحتوي على',
+    // Cinese semplificato/tradizionale
+    '不含',
+    '无',
+    '未添加',
+    '未含',
+    '不含有',
+    // Giapponese (forme attive/passive, plain/polite)
+    '含まない',
+    '含まれない',
+    '含みません',
+    '含まれません',
+    'を含みません',
+    'は含みません',
+    'を含まない',
+    '不使用',
+    '無し',
+    'なし',
+    // Coreano
+    '포함하지 않음',
+    '포함되지 않음',
+    '없음',
+    '비함유',
+    '무첨가',
+    // Greco
+    'χωρίς',
+    'δεν περιέχει',
   ];
 
   static final _boundarySplitRegExp = RegExp(r'[.,;:!?()\[\]]');
   static final _freeSuffixRegExp =
       RegExp(r'^[\s\-_]*(free|frei|libre|gratis|frei\s*von)\b');
+
+  /// Versione pre-normalizzata (lowercase + senza accenti latini) delle
+  /// frasi di negazione: il testo ricevuto da `_isNegated` e' gia' normalizzato.
+  late final List<String> _normalizedNegationPhrases =
+      _negationPhrases.map(_normalize).where((p) => p.isNotEmpty).toSet().toList()
+        ..sort((a, b) => b.length.compareTo(a.length));
 
   /// Controlla se un match di allergene è all'interno di una clausola
   /// di negazione ("senza glutine", "gluten-free", ecc).
@@ -230,9 +327,11 @@ class AllergenPatternEngine {
     final boundaries = _boundarySplitRegExp.allMatches(before).toList();
     final relevantBefore =
         boundaries.isEmpty ? before : before.substring(boundaries.last.end);
-    for (final phrase in _negationPhrases) {
+    for (final phrase in _normalizedNegationPhrases) {
       final idx = relevantBefore.indexOf(phrase);
       if (idx < 0) continue;
+      // Le phrases CJK non hanno separatori di parola: match diretto.
+      if (_hasCjk(phrase)) return true;
       final beforePhrase = idx - 1;
       final afterPhrase = idx + phrase.length;
       final isStartOk = beforePhrase < 0 ||
@@ -245,8 +344,38 @@ class AllergenPatternEngine {
         matchEnd + 20 > text.length ? text.length : matchEnd + 20;
     final after = text.substring(matchEnd, windowEnd);
     if (_freeSuffixRegExp.hasMatch(after)) return true;
+    // Negazioni postposte (lingue SOV: giapponese, coreano).
+    for (final phrase in _postNegationPhrases) {
+      if (after.contains(phrase)) return true;
+    }
     return false;
   }
+
+  /// Frasi di negazione che seguono l'allergene (jp/ko hanno verbo finale).
+  static const _postNegationPhrases = <String>[
+    // Giapponese
+    'を含みません',
+    'は含みません',
+    'が含みません',
+    '含みません',
+    '含まれません',
+    'を含まない',
+    'は含まない',
+    '含まない',
+    '含まれない',
+    '不使用',
+    'なし',
+    '無し',
+    // Coreano
+    '포함하지 않음',
+    '포함되지 않음',
+    '없음',
+    '비함유',
+    '무첨가',
+    // Cinese (postposto raro ma possibile)
+    '不含',
+    '未含',
+  ];
 
   static const _vowels = {'a', 'e', 'i', 'o', 'u'};
 

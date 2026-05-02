@@ -153,7 +153,77 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get scannerAnalysisActive =>
-      'Análisis activo en código de barras y OCR.';
+      'Escáner activo: buscando código de barras e ingredientes.';
+
+  @override
+  String scannerLiveBarcodeDetected(String barcode) {
+    return 'Código de barras detectado: $barcode. Comprobando producto...';
+  }
+
+  @override
+  String get scannerLiveBarcodeUnknown =>
+      'Código de barras leído, pero el producto no está disponible.';
+
+  @override
+  String scannerLiveTextRead(String text) {
+    return 'Texto leído: \"$text\". Comprobando alérgenos...';
+  }
+
+  @override
+  String get scannerLiveNoAllergenInText =>
+      'Texto reconocido, pero no se encontró ninguno de los alérgenos seleccionados.';
+
+  @override
+  String get scannerLivePossibleAllergen =>
+      'Posible alérgeno detectado. Confirmando...';
+
+  @override
+  String get scannerLiveConfirmedNoMatch =>
+      'Texto confirmado, pero la coincidencia no es lo suficientemente fiable.';
+
+  @override
+  String get scannerLiveProductTagsIncomplete =>
+      'Etiquetas de producto incompletas: leyendo imagen de ingredientes...';
+
+  @override
+  String get scannerLiveImageNoMatch =>
+      'Imagen de ingredientes leída: no se encontró ninguno de los alérgenos seleccionados.';
+
+  @override
+  String get scannerLiveStillCapturedReview =>
+      'Foto capturada. Revisa el texto reconocido abajo.';
+
+  @override
+  String get scannerLiveStillNoMatch =>
+      'Foto capturada: no se encontró ninguno de los alérgenos seleccionados en el texto.';
+
+  @override
+  String get scannerStillReviewTitle => 'Vista previa de la foto';
+
+  @override
+  String scannerStillReviewConfidence(String value) {
+    return 'Confianza OCR: $value';
+  }
+
+  @override
+  String get scannerStillReviewRecognizedText => 'Texto reconocido:';
+
+  @override
+  String get scannerStillReviewEmptyText => '(no se reconoció ningún texto)';
+
+  @override
+  String get scannerTorchUnavailable =>
+      'Linterna no disponible en este dispositivo';
+
+  @override
+  String get scannerTorchToggleOn => 'Encender linterna';
+
+  @override
+  String get scannerTorchToggleOff => 'Apagar linterna';
+
+  @override
+  String get scannerOffImageTextHeader =>
+      'Texto OCR de la imagen Open Food Facts:';
 
   @override
   String scannerLastBarcode(String barcode) {
@@ -319,6 +389,33 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get settingsClearDialogBody =>
       'Se eliminarán onboarding, idioma, alérgenos seleccionados y alérgenos personalizados.';
+
+  @override
+  String get settingsAdvanced => 'Avanzado';
+
+  @override
+  String get settingsAdvancedSubtitle =>
+      'Sincronización de alérgenos, contribuciones comunitarias, restablecer, datos locales';
+
+  @override
+  String get settingsAdvancedTitle => 'Ajustes avanzados';
+
+  @override
+  String get settingsTextSize => 'Tamaño del texto';
+
+  @override
+  String get settingsTextSizeSmall => 'Pequeño';
+
+  @override
+  String get settingsTextSizeMedium => 'Mediano';
+
+  @override
+  String get settingsTextSizeLarge => 'Grande';
+
+  @override
+  String settingsVersion(String version, String build) {
+    return 'Versión $version (build $build)';
+  }
 
   @override
   String get feedbackTitle => 'Dejar un comentario';

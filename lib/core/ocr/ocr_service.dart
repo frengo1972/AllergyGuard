@@ -76,33 +76,46 @@ class OcrService {
       rotation: rotation,
     );
 
-    if (mlKitResult.confidence >= AppConstants.ocrMinConfidence ||
-        mlKitResult.text.trim().isNotEmpty ||
-        !_cloudVisionOcr.isConfigured) {
+    // ML Kit affidabile: nessun fallback necessario.
+    if (mlKitResult.confidence >= AppConstants.ocrMinConfidence) {
       return mlKitResult;
     }
 
-    // Fallback a Cloud Vision
+    // ML Kit poco affidabile e Cloud Vision non configurato: ritorna ML Kit.
+    if (!_cloudVisionOcr.isConfigured) {
+      return mlKitResult;
+    }
+
+    // Fallback a Cloud Vision per testo a bassa confidence o assente.
     try {
       final cloudResult = await _cloudVisionOcr.processImage(image);
-      return cloudResult;
+      // Se Cloud Vision restituisce piu' testo o testo non vuoto, preferiscilo.
+      if (cloudResult.text.trim().length > mlKitResult.text.trim().length) {
+        return cloudResult;
+      }
+      return cloudResult.text.trim().isNotEmpty ? cloudResult : mlKitResult;
     } catch (_) {
-      // Se Cloud Vision fallisce, ritorna comunque il risultato ML Kit
       return mlKitResult;
     }
   }
 
-  /// Esegue OCR su un file immagine (es. da galleria).
+  /// Esegue OCR su un file immagine (es. da galleria o still capture).
   Future<OcrResult> processFile(String filePath) async {
     final mlKitResult = await _mlKitOcr.processFile(filePath);
 
     if (mlKitResult.confidence >= AppConstants.ocrMinConfidence) {
       return mlKitResult;
     }
+    if (!_cloudVisionOcr.isConfigured) {
+      return mlKitResult;
+    }
 
     try {
       final cloudResult = await _cloudVisionOcr.processFile(filePath);
-      return cloudResult;
+      if (cloudResult.text.trim().length > mlKitResult.text.trim().length) {
+        return cloudResult;
+      }
+      return cloudResult.text.trim().isNotEmpty ? cloudResult : mlKitResult;
     } catch (_) {
       return mlKitResult;
     }

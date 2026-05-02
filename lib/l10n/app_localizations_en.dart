@@ -150,7 +150,78 @@ class AppLocalizationsEn extends AppLocalizations {
       'Select at least one allergen in settings to enable automatic alerts.';
 
   @override
-  String get scannerAnalysisActive => 'Analysis active on barcode and OCR.';
+  String get scannerAnalysisActive =>
+      'Scanner active: looking for barcode and ingredients.';
+
+  @override
+  String scannerLiveBarcodeDetected(String barcode) {
+    return 'Barcode detected: $barcode. Checking product...';
+  }
+
+  @override
+  String get scannerLiveBarcodeUnknown =>
+      'Barcode read, but the product is not available.';
+
+  @override
+  String scannerLiveTextRead(String text) {
+    return 'Text read: \"$text\". Checking allergens...';
+  }
+
+  @override
+  String get scannerLiveNoAllergenInText =>
+      'Text recognized, but none of your selected allergens were found.';
+
+  @override
+  String get scannerLivePossibleAllergen =>
+      'Possible allergen detected. Confirming...';
+
+  @override
+  String get scannerLiveConfirmedNoMatch =>
+      'Text confirmed, but the match is not reliable enough.';
+
+  @override
+  String get scannerLiveProductTagsIncomplete =>
+      'Incomplete product tags: reading ingredients image...';
+
+  @override
+  String get scannerLiveImageNoMatch =>
+      'Ingredients image read: none of your selected allergens were found.';
+
+  @override
+  String get scannerLiveStillCapturedReview =>
+      'Photo captured. Check the recognized text below.';
+
+  @override
+  String get scannerLiveStillNoMatch =>
+      'Photo captured: none of your selected allergens were found in the text.';
+
+  @override
+  String get scannerStillReviewTitle => 'Photo preview';
+
+  @override
+  String scannerStillReviewConfidence(String value) {
+    return 'OCR confidence: $value';
+  }
+
+  @override
+  String get scannerStillReviewRecognizedText => 'Recognized text:';
+
+  @override
+  String get scannerStillReviewEmptyText => '(no text recognized)';
+
+  @override
+  String get scannerTorchUnavailable =>
+      'Flashlight not available on this device';
+
+  @override
+  String get scannerTorchToggleOn => 'Turn on flashlight';
+
+  @override
+  String get scannerTorchToggleOff => 'Turn off flashlight';
+
+  @override
+  String get scannerOffImageTextHeader =>
+      'OCR text from Open Food Facts image:';
 
   @override
   String scannerLastBarcode(String barcode) {
@@ -317,6 +388,33 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsClearDialogBody =>
       'Onboarding, language, selected allergens and custom allergens will be removed.';
+
+  @override
+  String get settingsAdvanced => 'Advanced';
+
+  @override
+  String get settingsAdvancedSubtitle =>
+      'Allergen sync, community contributions, reset, local data';
+
+  @override
+  String get settingsAdvancedTitle => 'Advanced settings';
+
+  @override
+  String get settingsTextSize => 'Text size';
+
+  @override
+  String get settingsTextSizeSmall => 'Small';
+
+  @override
+  String get settingsTextSizeMedium => 'Medium';
+
+  @override
+  String get settingsTextSizeLarge => 'Large';
+
+  @override
+  String settingsVersion(String version, String build) {
+    return 'Version $version (build $build)';
+  }
 
   @override
   String get feedbackTitle => 'Leave feedback';

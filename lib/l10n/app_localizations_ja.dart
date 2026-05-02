@@ -144,7 +144,68 @@ class AppLocalizationsJa extends AppLocalizations {
       '自動通知を有効にするには、設定で少なくとも1つのアレルゲンを選択してください。';
 
   @override
-  String get scannerAnalysisActive => 'バーコードとOCRの解析を実行中です。';
+  String get scannerAnalysisActive => 'スキャナー起動中：バーコードと原材料を検索しています。';
+
+  @override
+  String scannerLiveBarcodeDetected(String barcode) {
+    return 'バーコードを検出しました：$barcode。製品を確認中...';
+  }
+
+  @override
+  String get scannerLiveBarcodeUnknown => 'バーコードを読み取りましたが、製品情報が利用できません。';
+
+  @override
+  String scannerLiveTextRead(String text) {
+    return 'テキストを読み取りました：\"$text\"。アレルゲンを確認中...';
+  }
+
+  @override
+  String get scannerLiveNoAllergenInText =>
+      'テキストを認識しましたが、選択したアレルゲンは見つかりませんでした。';
+
+  @override
+  String get scannerLivePossibleAllergen => 'アレルゲンの可能性を検出しました。確認中...';
+
+  @override
+  String get scannerLiveConfirmedNoMatch => 'テキストを確認しましたが、信頼性が十分ではありません。';
+
+  @override
+  String get scannerLiveProductTagsIncomplete => '製品タグが不完全です：原材料の画像を読み取り中...';
+
+  @override
+  String get scannerLiveImageNoMatch => '原材料の画像を読み取りました：選択したアレルゲンは見つかりませんでした。';
+
+  @override
+  String get scannerLiveStillCapturedReview => '写真を撮影しました。下の認識テキストを確認してください。';
+
+  @override
+  String get scannerLiveStillNoMatch => '写真を撮影しました：選択したアレルゲンはテキスト中に見つかりませんでした。';
+
+  @override
+  String get scannerStillReviewTitle => '写真プレビュー';
+
+  @override
+  String scannerStillReviewConfidence(String value) {
+    return 'OCR信頼度：$value';
+  }
+
+  @override
+  String get scannerStillReviewRecognizedText => '認識されたテキスト：';
+
+  @override
+  String get scannerStillReviewEmptyText => '（テキストが認識されませんでした）';
+
+  @override
+  String get scannerTorchUnavailable => 'このデバイスではライトを使用できません';
+
+  @override
+  String get scannerTorchToggleOn => 'ライトをオン';
+
+  @override
+  String get scannerTorchToggleOff => 'ライトをオフ';
+
+  @override
+  String get scannerOffImageTextHeader => 'Open Food Facts 画像のOCRテキスト：';
 
   @override
   String scannerLastBarcode(String barcode) {
@@ -305,6 +366,32 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get settingsClearDialogBody =>
       'オンボーディング、言語、選択したアレルゲン、カスタムアレルゲンが削除されます。';
+
+  @override
+  String get settingsAdvanced => '詳細設定';
+
+  @override
+  String get settingsAdvancedSubtitle => 'アレルゲン同期、コミュニティ貢献、リセット、ローカルデータ';
+
+  @override
+  String get settingsAdvancedTitle => '詳細設定';
+
+  @override
+  String get settingsTextSize => '文字サイズ';
+
+  @override
+  String get settingsTextSizeSmall => '小';
+
+  @override
+  String get settingsTextSizeMedium => '中';
+
+  @override
+  String get settingsTextSizeLarge => '大';
+
+  @override
+  String settingsVersion(String version, String build) {
+    return 'バージョン $version (build $build)';
+  }
 
   @override
   String get feedbackTitle => 'フィードバックを送る';

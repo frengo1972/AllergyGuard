@@ -363,8 +363,116 @@ abstract class AppLocalizations {
   /// No description provided for @scannerAnalysisActive.
   ///
   /// In it, this message translates to:
-  /// **'Analisi attiva su barcode e OCR.'**
+  /// **'Scanner attivo: cerco barcode e ingredienti.'**
   String get scannerAnalysisActive;
+
+  /// No description provided for @scannerLiveBarcodeDetected.
+  ///
+  /// In it, this message translates to:
+  /// **'Barcode rilevato: {barcode}. Verifica prodotto...'**
+  String scannerLiveBarcodeDetected(String barcode);
+
+  /// No description provided for @scannerLiveBarcodeUnknown.
+  ///
+  /// In it, this message translates to:
+  /// **'Barcode letto, ma il prodotto non è disponibile.'**
+  String get scannerLiveBarcodeUnknown;
+
+  /// No description provided for @scannerLiveTextRead.
+  ///
+  /// In it, this message translates to:
+  /// **'Testo letto: \"{text}\". Controllo allergeni...'**
+  String scannerLiveTextRead(String text);
+
+  /// No description provided for @scannerLiveNoAllergenInText.
+  ///
+  /// In it, this message translates to:
+  /// **'Testo riconosciuto, ma nessun allergene selezionato è stato trovato.'**
+  String get scannerLiveNoAllergenInText;
+
+  /// No description provided for @scannerLivePossibleAllergen.
+  ///
+  /// In it, this message translates to:
+  /// **'Possibile allergene rilevato. Conferma in corso...'**
+  String get scannerLivePossibleAllergen;
+
+  /// No description provided for @scannerLiveConfirmedNoMatch.
+  ///
+  /// In it, this message translates to:
+  /// **'Testo confermato, ma il match non è abbastanza affidabile.'**
+  String get scannerLiveConfirmedNoMatch;
+
+  /// No description provided for @scannerLiveProductTagsIncomplete.
+  ///
+  /// In it, this message translates to:
+  /// **'Tag prodotto incompleti: leggo immagine ingredienti...'**
+  String get scannerLiveProductTagsIncomplete;
+
+  /// No description provided for @scannerLiveImageNoMatch.
+  ///
+  /// In it, this message translates to:
+  /// **'Immagine ingredienti letta: nessun allergene selezionato trovato.'**
+  String get scannerLiveImageNoMatch;
+
+  /// No description provided for @scannerLiveStillCapturedReview.
+  ///
+  /// In it, this message translates to:
+  /// **'Foto acquisita. Controlla il testo riconosciuto qui sotto.'**
+  String get scannerLiveStillCapturedReview;
+
+  /// No description provided for @scannerLiveStillNoMatch.
+  ///
+  /// In it, this message translates to:
+  /// **'Foto acquisita: nessun allergene selezionato trovato nel testo.'**
+  String get scannerLiveStillNoMatch;
+
+  /// No description provided for @scannerStillReviewTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Anteprima scatto'**
+  String get scannerStillReviewTitle;
+
+  /// No description provided for @scannerStillReviewConfidence.
+  ///
+  /// In it, this message translates to:
+  /// **'Confidence OCR: {value}'**
+  String scannerStillReviewConfidence(String value);
+
+  /// No description provided for @scannerStillReviewRecognizedText.
+  ///
+  /// In it, this message translates to:
+  /// **'Testo riconosciuto:'**
+  String get scannerStillReviewRecognizedText;
+
+  /// No description provided for @scannerStillReviewEmptyText.
+  ///
+  /// In it, this message translates to:
+  /// **'(nessun testo riconosciuto)'**
+  String get scannerStillReviewEmptyText;
+
+  /// No description provided for @scannerTorchUnavailable.
+  ///
+  /// In it, this message translates to:
+  /// **'Luce LED non disponibile su questo dispositivo'**
+  String get scannerTorchUnavailable;
+
+  /// No description provided for @scannerTorchToggleOn.
+  ///
+  /// In it, this message translates to:
+  /// **'Attiva luce LED'**
+  String get scannerTorchToggleOn;
+
+  /// No description provided for @scannerTorchToggleOff.
+  ///
+  /// In it, this message translates to:
+  /// **'Disattiva luce LED'**
+  String get scannerTorchToggleOff;
+
+  /// No description provided for @scannerOffImageTextHeader.
+  ///
+  /// In it, this message translates to:
+  /// **'Testo OCR immagine Open Food Facts:'**
+  String get scannerOffImageTextHeader;
 
   /// No description provided for @scannerLastBarcode.
   ///
@@ -677,6 +785,54 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Verranno rimossi onboarding, lingua, allergeni selezionati e allergeni personalizzati.'**
   String get settingsClearDialogBody;
+
+  /// No description provided for @settingsAdvanced.
+  ///
+  /// In it, this message translates to:
+  /// **'Avanzate'**
+  String get settingsAdvanced;
+
+  /// No description provided for @settingsAdvancedSubtitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Sync allergeni, contributi community, ripristino, dati locali'**
+  String get settingsAdvancedSubtitle;
+
+  /// No description provided for @settingsAdvancedTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Impostazioni avanzate'**
+  String get settingsAdvancedTitle;
+
+  /// No description provided for @settingsTextSize.
+  ///
+  /// In it, this message translates to:
+  /// **'Dimensione testo'**
+  String get settingsTextSize;
+
+  /// No description provided for @settingsTextSizeSmall.
+  ///
+  /// In it, this message translates to:
+  /// **'Piccolo'**
+  String get settingsTextSizeSmall;
+
+  /// No description provided for @settingsTextSizeMedium.
+  ///
+  /// In it, this message translates to:
+  /// **'Medio'**
+  String get settingsTextSizeMedium;
+
+  /// No description provided for @settingsTextSizeLarge.
+  ///
+  /// In it, this message translates to:
+  /// **'Grande'**
+  String get settingsTextSizeLarge;
+
+  /// No description provided for @settingsVersion.
+  ///
+  /// In it, this message translates to:
+  /// **'Versione {version} (build {build})'**
+  String settingsVersion(String version, String build);
 
   /// No description provided for @feedbackTitle.
   ///

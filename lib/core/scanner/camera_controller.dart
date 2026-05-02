@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:async';
+import 'dart:ui';
 import 'package:camera/camera.dart';
 import 'package:allergyguard/core/constants.dart';
 
@@ -10,6 +11,7 @@ class AppCameraController {
   bool _isProcessing = false;
   bool _isTorchAvailable = false;
   bool _isTorchEnabled = false;
+  Future<void> Function(CameraImage)? _activeOnFrame;
 
   CameraController? get controller => _controller;
   CameraDescription? get description => _controller?.description;
@@ -29,7 +31,7 @@ class AppCameraController {
 
     _controller = CameraController(
       selectedCamera,
-      ResolutionPreset.high,
+      ResolutionPreset.veryHigh,
       enableAudio: false,
       imageFormatGroup: Platform.isAndroid
           ? ImageFormatGroup.nv21
@@ -44,6 +46,7 @@ class AppCameraController {
   Future<void> startImageStream(
       Future<void> Function(CameraImage) onFrame) async {
     if (_controller == null || isStreamingImages) return;
+    _activeOnFrame = onFrame;
 
     await _controller!.startImageStream((image) async {
       if (_isProcessing) return;
@@ -83,6 +86,41 @@ class AppCameraController {
 
     final file = await _controller!.takePicture();
     return file.path;
+  }
+
+  /// Scatto a piena risoluzione che mette in pausa lo stream e poi lo riprende.
+  /// Usato per OCR periodico durante la scansione.
+  Future<String?> captureStillKeepingStream() async {
+    if (_controller == null || !isInitialized) return null;
+    final wasStreaming = isStreamingImages;
+    final previousOnFrame = _activeOnFrame;
+    if (wasStreaming) {
+      await stopImageStream();
+    }
+    try {
+      final file = await _controller!.takePicture();
+      return file.path;
+    } catch (_) {
+      return null;
+    } finally {
+      if (wasStreaming && previousOnFrame != null) {
+        await startImageStream(previousOnFrame);
+      }
+    }
+  }
+
+  /// Imposta il punto di messa a fuoco e di esposizione (tap-to-focus).
+  /// Coordinate normalizzate [0..1] rispetto al preview.
+  Future<void> setFocusAndExposurePoint(Offset point) async {
+    if (_controller == null || !isInitialized) return;
+    try {
+      await _controller!.setFocusPoint(point);
+      await _controller!.setExposurePoint(point);
+      await _controller!.setFocusMode(FocusMode.auto);
+      await _controller!.setExposureMode(ExposureMode.auto);
+    } on CameraException {
+      // Alcuni device non supportano focus/expo manuale: ignora.
+    }
   }
 
   Future<bool> setTorchEnabled(bool enabled) async {

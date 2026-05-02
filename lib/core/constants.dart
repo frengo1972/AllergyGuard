@@ -26,9 +26,13 @@ class AppConstants {
   static const int cameraOcrIntervalMs = 500;
   static const int scannerDuplicateCooldownMs = 4000;
   static const double scannerStillCaptureConfidenceThreshold = 0.78;
-  static const int scannerStillCaptureTimeoutMs = 1200;
+  static const int scannerStillCaptureTimeoutMs = 1500;
   static const int offImageOcrMaxImages = 2;
   static const int offImageOcrTimeoutMs = 3500;
+
+  // Auto-still capture: scatto automatico a piena risoluzione durante la scansione.
+  static const int scannerAutoStillIntervalMs = 1500;
+  static const int scannerAutoStillTimeoutMs = 2500;
 
   // Claude API
   static const String claudeModel = 'claude-sonnet-4-20250514';

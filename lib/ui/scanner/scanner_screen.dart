@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -58,6 +61,16 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       <String, Map<String, List<String>>>{};
   Map<String, String> _localizedAllergenNames = <String, String>{};
 
+  // Auto-still capture state
+  Timer? _autoStillTimer;
+  bool _isAutoStillRunning = false;
+  String? _lastStillImagePath;
+  String? _lastStillOcrText;
+  double? _lastStillOcrConfidence;
+  bool _isManualCaptureBusy = false;
+  Offset? _focusIndicatorPoint;
+  Timer? _focusIndicatorTimer;
+
   @override
   void initState() {
     super.initState();
@@ -106,15 +119,47 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
       return ColoredBox(
         color: Colors.black,
-        child: SizedBox.expand(
-          child: FittedBox(
-            fit: BoxFit.cover,
-            child: SizedBox(
-              width: previewSize.height,
-              height: previewSize.width,
-              child: CameraPreview(controller),
-            ),
-          ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (details) => _handlePreviewTap(
+                details.localPosition,
+                Size(constraints.maxWidth, constraints.maxHeight),
+              ),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.cover,
+                    child: SizedBox(
+                      width: previewSize.height,
+                      height: previewSize.width,
+                      child: CameraPreview(controller),
+                    ),
+                  ),
+                  if (_focusIndicatorPoint != null)
+                    Positioned(
+                      left: _focusIndicatorPoint!.dx - 32,
+                      top: _focusIndicatorPoint!.dy - 32,
+                      child: IgnorePointer(
+                        child: Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.amberAccent,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
         ),
       );
     }
@@ -205,6 +250,9 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
               isEnabled: _isTorchEnabled,
               isAvailable: _isTorchAvailable,
               onPressed: _toggleTorch,
+              tooltipOn: l10n.scannerTorchToggleOff,
+              tooltipOff: l10n.scannerTorchToggleOn,
+              tooltipUnavailable: l10n.scannerTorchUnavailable,
             ),
           ),
         ],
@@ -239,15 +287,17 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   }
 
   Widget _buildBottomBar() {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
     return Positioned(
       bottom: 0,
       left: 0,
       right: 0,
       child: Container(
         color: Colors.black54,
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             IconButton(
               icon: const Icon(Icons.history, color: Colors.white),
@@ -257,6 +307,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                 ),
               ),
             ),
+            _buildLastStillThumbnail(),
+            _buildManualCaptureButton(),
             IconButton(
               icon: const Icon(Icons.settings, color: Colors.white),
               onPressed: () async {
@@ -273,6 +325,55 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildLastStillThumbnail() {
+    final path = _lastStillImagePath;
+    if (path == null) {
+      return const SizedBox(width: 56, height: 56);
+    }
+    return GestureDetector(
+      onTap: _openStillReview,
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white70, width: 1),
+          image: DecorationImage(
+            image: FileImage(File(path)),
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildManualCaptureButton() {
+    return GestureDetector(
+      onTap: _isManualCaptureBusy ? null : _handleManualCapture,
+      child: Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white,
+          border: Border.all(
+            color: _isManualCaptureBusy ? Colors.amber : Colors.white,
+            width: 4,
+          ),
+        ),
+        child: _isManualCaptureBusy
+            ? const Padding(
+                padding: EdgeInsets.all(14),
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  valueColor: AlwaysStoppedAnimation(Colors.amber),
+                ),
+              )
+            : const Icon(Icons.camera_alt, color: Colors.black, size: 28),
       ),
     );
   }
@@ -307,7 +408,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     _clearRecentDetections();
 
     if (_selectedAllergenKeys.isNotEmpty) {
-      _setLiveFeedback('Scanner attivo: cerco barcode e ingredienti.');
+      _setLiveFeedback(AppLocalizations.of(context).scannerAnalysisActive);
     }
 
     await _startAutoAnalysis();
@@ -346,7 +447,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         }
       });
       _clearRecentDetections();
-      _setLiveFeedback('Scanner attivo: cerco barcode e ingredienti.');
+      _setLiveFeedback(AppLocalizations.of(context).scannerAnalysisActive);
       await _startAutoAnalysis();
     } catch (error) {
       if (!mounted) return;
@@ -410,6 +511,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         }
         await _presentResult(ocrResult);
       });
+      _startAutoStillTimer();
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -439,14 +541,18 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       return null;
     }
 
-    _setLiveFeedback('Barcode rilevato: $barcode. Verifica prodotto...');
+    _setLiveFeedback(
+      AppLocalizations.of(context).scannerLiveBarcodeDetected(barcode),
+    );
     final product = await ref.read(openFoodFactsProvider).getByBarcode(barcode);
     if (!mounted || _isPresentingResult) {
       return null;
     }
     if (product == null) {
       _rememberBarcode(barcode);
-      _setLiveFeedback('Barcode letto, ma il prodotto non e disponibile.');
+      _setLiveFeedback(
+        AppLocalizations.of(context).scannerLiveBarcodeUnknown,
+      );
       return null;
     }
 
@@ -473,7 +579,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     }
 
     _setLiveFeedback(
-      'Testo letto: "${_truncatePreview(recognizedText)}". Controllo allergeni...',
+      AppLocalizations.of(context)
+          .scannerLiveTextRead(_truncatePreview(recognizedText)),
     );
 
     return _buildOcrResult(result);
@@ -498,7 +605,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     if (analysis.level != ScanResultLevel.danger &&
         analysis.level != ScanResultLevel.warning) {
       _setLiveFeedback(
-        'Testo riconosciuto, ma nessun allergene selezionato e stato trovato.',
+        AppLocalizations.of(context).scannerLiveNoAllergenInText,
       );
       return null;
     }
@@ -520,7 +627,9 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       liveResult: liveResult,
       liveMatches: liveMatches,
     )) {
-      _setLiveFeedback('Possibile allergene rilevato. Conferma in corso...');
+      _setLiveFeedback(
+        AppLocalizations.of(context).scannerLivePossibleAllergen,
+      );
       final detailedResult = await _captureStillOcrResult();
       if (detailedResult?.text.trim().isNotEmpty == true) {
         finalOcrResult = detailedResult!;
@@ -542,8 +651,9 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     final finalText = finalOcrResult.text.trim();
     if (finalAnalysis.level != ScanResultLevel.danger &&
         finalAnalysis.level != ScanResultLevel.warning) {
+      if (!mounted) return null;
       _setLiveFeedback(
-        'Testo confermato, ma il match non e abbastanza affidabile.',
+        AppLocalizations.of(context).scannerLiveConfirmedNoMatch,
       );
       return null;
     }
@@ -603,7 +713,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         traceAllergens.isEmpty &&
         product.labelImageCandidates.isNotEmpty) {
       _setLiveFeedback(
-          'Tag prodotto incompleti: leggo immagine ingredienti...');
+        AppLocalizations.of(context).scannerLiveProductTagsIncomplete,
+      );
       final imageOcrResult = await _buildProductImageOcrBarcodeResult(product);
       if (imageOcrResult != null) {
         return imageOcrResult;
@@ -706,8 +817,9 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       );
     }
 
+    if (!mounted) return null;
     _setLiveFeedback(
-      'Immagine ingredienti letta: nessun allergene selezionato trovato.',
+      AppLocalizations.of(context).scannerLiveImageNoMatch,
     );
     return null;
   }
@@ -739,7 +851,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         _normalizeText(structuredText) == _normalizeText(ocrText)) {
       return structuredText;
     }
-    return '$structuredText\n\nTesto OCR immagine Open Food Facts:\n$ocrText';
+    final header = AppLocalizations.of(context).scannerOffImageTextHeader;
+    return '$structuredText\n\n$header\n$ocrText';
   }
 
   Future<void> _presentResult(ScanResult result) async {
@@ -761,16 +874,191 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     setState(() {
       _isPresentingResult = false;
     });
-    _setLiveFeedback('Scanner riattivato: cerco barcode e ingredienti.');
+    _setLiveFeedback(AppLocalizations.of(context).scannerAnalysisActive);
     await _startAutoAnalysis();
   }
 
   Future<void> _stopAnalysisStream({required bool clearPreview}) async {
+    _stopAutoStillTimer();
     await _cameraController.stopImageStream();
     if (!mounted) return;
     setState(() {
       _isAnalysisStreamActive = false;
       _analysisFrameIndex = 0;
+    });
+  }
+
+  void _startAutoStillTimer() {
+    _autoStillTimer?.cancel();
+    _autoStillTimer = Timer.periodic(
+      const Duration(milliseconds: AppConstants.scannerAutoStillIntervalMs),
+      (_) => _runAutoStillCapture(),
+    );
+  }
+
+  void _stopAutoStillTimer() {
+    _autoStillTimer?.cancel();
+    _autoStillTimer = null;
+  }
+
+  Future<void> _runAutoStillCapture() async {
+    if (!mounted ||
+        _isPresentingResult ||
+        _isAutoStillRunning ||
+        _isManualCaptureBusy ||
+        _selectedAllergenKeys.isEmpty ||
+        !_cameraController.isInitialized) {
+      return;
+    }
+    _isAutoStillRunning = true;
+    try {
+      final scanResult = await _captureAndAnalyzeStill();
+      if (!mounted || _isPresentingResult) return;
+      if (scanResult != null) {
+        await _presentResult(scanResult);
+      }
+    } finally {
+      _isAutoStillRunning = false;
+    }
+  }
+
+  Future<void> _handleManualCapture() async {
+    if (_isManualCaptureBusy ||
+        _isPresentingResult ||
+        !_cameraController.isInitialized) {
+      return;
+    }
+    setState(() => _isManualCaptureBusy = true);
+    try {
+      final scanResult = await _captureAndAnalyzeStill(forceReview: true);
+      if (!mounted) return;
+      if (scanResult != null && !_isPresentingResult) {
+        await _presentResult(scanResult);
+      } else {
+        _setLiveFeedback(
+          AppLocalizations.of(context).scannerLiveStillCapturedReview,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isManualCaptureBusy = false);
+      }
+    }
+  }
+
+  /// Esegue uno scatto a piena risoluzione, salva path/OCR per la review,
+  /// e prova a costruire un ScanResult se vengono rilevati allergeni utente.
+  Future<ScanResult?> _captureAndAnalyzeStill({bool forceReview = false}) async {
+    try {
+      final imagePath = await _cameraController
+          .captureStillKeepingStream()
+          .timeout(
+            const Duration(
+              milliseconds: AppConstants.scannerAutoStillTimeoutMs,
+            ),
+          );
+      if (imagePath == null || imagePath.isEmpty || !mounted) return null;
+
+      final ocrResult = await ref
+          .read(ocrServiceProvider)
+          .processFile(imagePath)
+          .timeout(
+            const Duration(
+              milliseconds: AppConstants.scannerAutoStillTimeoutMs,
+            ),
+          );
+      if (!mounted) return null;
+
+      setState(() {
+        _lastStillImagePath = imagePath;
+        _lastStillOcrText = ocrResult.text;
+        _lastStillOcrConfidence = ocrResult.confidence;
+      });
+
+      if (_selectedAllergenKeys.isEmpty) return null;
+
+      final recognizedText = ocrResult.text.trim();
+      if (recognizedText.isEmpty) return null;
+
+      final engine = AllergenPatternEngine(
+        verifiedPatterns: _patternRepository.verifiedPatterns,
+        allergenNames: _allergenNamesByKey,
+      );
+      final analysis = engine.analyze(
+        ocrText: recognizedText,
+        userAllergenKeys: _selectedAllergenKeys.toList(),
+      );
+
+      if (analysis.level != ScanResultLevel.danger &&
+          analysis.level != ScanResultLevel.warning) {
+        if (forceReview) {
+          _setLiveFeedback(
+            AppLocalizations.of(context).scannerLiveStillNoMatch,
+          );
+        }
+        return null;
+      }
+
+      final signature = _normalizeText(recognizedText);
+      if (!forceReview &&
+          signature.length >= 12 &&
+          _shouldSkipRecentOcrSignature(signature)) {
+        return null;
+      }
+      _rememberOcrSignature(signature);
+
+      final matches = _ocrMatchExtractor.extract(
+        ocrResult: ocrResult,
+        selectedAllergenKeys: _selectedAllergenKeys,
+        allergenTermsByKey: _allergenTermsByKey,
+        localizedAllergenNames: _localizedAllergenNames,
+        singleBestMatchPerAllergen: true,
+      );
+
+      return ScanResult(
+        level: analysis.level,
+        allergens: _localizeAllergenKeys(analysis.allergens),
+        ocrText: recognizedText,
+        highlightTerms: matches.map((m) => m.matchedText).toSet().toList()
+          ..sort((a, b) => b.length.compareTo(a.length)),
+        matches: matches,
+        referenceImagePath: imagePath,
+        confidence: ocrResult.confidence,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _openStillReview() {
+    final path = _lastStillImagePath;
+    if (path == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _StillReviewScreen(
+          imagePath: path,
+          ocrText: _lastStillOcrText ?? '',
+          confidence: _lastStillOcrConfidence,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handlePreviewTap(Offset localPosition, Size widgetSize) async {
+    if (!_cameraController.isInitialized || widgetSize.shortestSide <= 0) {
+      return;
+    }
+    final normalized = Offset(
+      (localPosition.dx / widgetSize.width).clamp(0.0, 1.0),
+      (localPosition.dy / widgetSize.height).clamp(0.0, 1.0),
+    );
+    await _cameraController.setFocusAndExposurePoint(normalized);
+    if (!mounted) return;
+    setState(() => _focusIndicatorPoint = localPosition);
+    _focusIndicatorTimer?.cancel();
+    _focusIndicatorTimer = Timer(const Duration(milliseconds: 900), () {
+      if (!mounted) return;
+      setState(() => _focusIndicatorPoint = null);
     });
   }
 
@@ -785,13 +1073,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   }
 
   String _buildLiveStatusText(AppLocalizations l10n) {
-    const barcodeInterval = AppConstants.cameraOcrIntervalMs;
-    const ocrInterval = AppConstants.cameraOcrIntervalMs * 2;
-    final headline =
-        _liveFeedback ?? 'Scanner attivo: cerco barcode e ingredienti.';
-    return '$headline\n'
-        'Barcode circa ogni $barcodeInterval ms, OCR circa ogni $ocrInterval ms.\n'
-        '${l10n.scannerPointCamera}';
+    final headline = _liveFeedback ?? l10n.scannerAnalysisActive;
+    return '$headline\n${l10n.scannerPointCamera}';
   }
 
   void _setLiveFeedback(String message) {
@@ -926,8 +1209,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
     if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Luce LED non disponibile su questo dispositivo'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).scannerTorchUnavailable),
         ),
       );
     }
@@ -935,8 +1218,94 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
   @override
   void dispose() {
+    _autoStillTimer?.cancel();
+    _focusIndicatorTimer?.cancel();
     _cameraController.dispose();
     super.dispose();
+  }
+}
+
+class _StillReviewScreen extends StatelessWidget {
+  const _StillReviewScreen({
+    required this.imagePath,
+    required this.ocrText,
+    required this.confidence,
+  });
+
+  final String imagePath;
+  final String ocrText;
+  final double? confidence;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final confidenceLabel = confidence == null
+        ? '-'
+        : '${(confidence! * 100).clamp(0, 100).toStringAsFixed(0)}%';
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: Text(l10n.scannerStillReviewTitle),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            flex: 3,
+            child: InteractiveViewer(
+              minScale: 1,
+              maxScale: 6,
+              child: Center(
+                child: Image.file(File(imagePath)),
+              ),
+            ),
+          ),
+          Container(
+            color: const Color(0xFF111827),
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset),
+            width: double.infinity,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.scannerStillReviewConfidence(confidenceLabel),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.scannerStillReviewRecognizedText,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 180),
+                  child: SingleChildScrollView(
+                    child: Text(
+                      ocrText.isEmpty
+                          ? l10n.scannerStillReviewEmptyText
+                          : ocrText,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -983,11 +1352,17 @@ class _TorchButton extends StatelessWidget {
     required this.isEnabled,
     required this.isAvailable,
     required this.onPressed,
+    required this.tooltipOn,
+    required this.tooltipOff,
+    required this.tooltipUnavailable,
   });
 
   final bool isEnabled;
   final bool isAvailable;
   final VoidCallback onPressed;
+  final String tooltipOn;
+  final String tooltipOff;
+  final String tooltipUnavailable;
 
   @override
   Widget build(BuildContext context) {
@@ -1012,10 +1387,10 @@ class _TorchButton extends StatelessWidget {
         padding: EdgeInsets.zero,
         onPressed: onPressed,
         tooltip: isEnabled
-            ? 'Disattiva luce LED'
+            ? tooltipOn
             : isAvailable
-                ? 'Attiva luce LED'
-                : 'Luce LED non disponibile',
+                ? tooltipOff
+                : tooltipUnavailable,
         icon: Icon(
           isEnabled ? Icons.flash_on : Icons.flash_off,
           color: isEnabled

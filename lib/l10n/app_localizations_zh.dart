@@ -141,7 +141,67 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scannerNoAllergenSelected => '请在设置中至少选择一种过敏原，以启用自动提醒。';
 
   @override
-  String get scannerAnalysisActive => '条形码与 OCR 分析已启用。';
+  String get scannerAnalysisActive => '扫描中：正在查找条形码与配料表。';
+
+  @override
+  String scannerLiveBarcodeDetected(String barcode) {
+    return '已检测到条形码：$barcode。正在核对产品...';
+  }
+
+  @override
+  String get scannerLiveBarcodeUnknown => '已读取条形码，但产品信息不可用。';
+
+  @override
+  String scannerLiveTextRead(String text) {
+    return '已读取文字：\"$text\"。正在核对过敏原...';
+  }
+
+  @override
+  String get scannerLiveNoAllergenInText => '已识别文字，但未找到您选择的过敏原。';
+
+  @override
+  String get scannerLivePossibleAllergen => '检测到疑似过敏原，正在确认...';
+
+  @override
+  String get scannerLiveConfirmedNoMatch => '文字已确认，但匹配可靠性不足。';
+
+  @override
+  String get scannerLiveProductTagsIncomplete => '产品标签不完整：正在读取配料图片...';
+
+  @override
+  String get scannerLiveImageNoMatch => '已读取配料图片：未找到您选择的过敏原。';
+
+  @override
+  String get scannerLiveStillCapturedReview => '已拍照。请查看下方的识别文字。';
+
+  @override
+  String get scannerLiveStillNoMatch => '已拍照：文字中未找到您选择的过敏原。';
+
+  @override
+  String get scannerStillReviewTitle => '照片预览';
+
+  @override
+  String scannerStillReviewConfidence(String value) {
+    return 'OCR 置信度：$value';
+  }
+
+  @override
+  String get scannerStillReviewRecognizedText => '识别到的文字：';
+
+  @override
+  String get scannerStillReviewEmptyText => '（未识别到文字）';
+
+  @override
+  String get scannerTorchUnavailable => '此设备不支持手电筒';
+
+  @override
+  String get scannerTorchToggleOn => '打开手电筒';
+
+  @override
+  String get scannerTorchToggleOff => '关闭手电筒';
+
+  @override
+  String get scannerOffImageTextHeader => 'Open Food Facts 图片 OCR 文字：';
 
   @override
   String scannerLastBarcode(String barcode) {
@@ -300,6 +360,32 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsClearDialogBody => '将移除引导、语言、所选过敏原和自定义过敏原。';
+
+  @override
+  String get settingsAdvanced => '高级';
+
+  @override
+  String get settingsAdvancedSubtitle => '过敏原同步、社区贡献、重置、本地数据';
+
+  @override
+  String get settingsAdvancedTitle => '高级设置';
+
+  @override
+  String get settingsTextSize => '文字大小';
+
+  @override
+  String get settingsTextSizeSmall => '小';
+
+  @override
+  String get settingsTextSizeMedium => '中';
+
+  @override
+  String get settingsTextSizeLarge => '大';
+
+  @override
+  String settingsVersion(String version, String build) {
+    return '版本 $version (build $build)';
+  }
 
   @override
   String get feedbackTitle => '留下反馈';
