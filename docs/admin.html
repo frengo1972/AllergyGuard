@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AllergyGuard — Admin Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#0d0d1a;--sb:#12122b;--card:#1a1a2e;--border:#252540;--text:#e2e2f0;--muted:#6b6b8a;--accent:#6c63ff;--danger:#ff4757;--warning:#ffa502;--safe:#2ed573;--info:#5ec4ff;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;overflow:hidden;font-size:14px;}
+
+/* LOGIN */
+#lo{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.lbox{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2rem;width:440px;max-width:95vw;}
+.lbox .ico{font-size:2rem;margin-bottom:.5rem;}
+.lbox h2{font-size:1.3rem;margin-bottom:.3rem;}
+.lbox .desc{color:var(--muted);font-size:.82rem;margin-bottom:1.5rem;line-height:1.5;}
+.field{margin-bottom:1rem;}
+.field label{display:block;font-size:.72rem;color:var(--muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+.field input{width:100%;padding:.6rem .8rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.9rem;}
+.field input:focus{outline:none;border-color:var(--accent);}
+.chkrow{display:flex;align-items:center;gap:.5rem;margin-bottom:1.2rem;font-size:.82rem;color:var(--muted);cursor:pointer;}
+.chkrow input{cursor:pointer;accent-color:var(--accent);}
+.btn-connect{width:100%;padding:.75rem;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer;}
+.btn-connect:hover{background:#7d76ff;}
+.lerr{color:var(--danger);font-size:.82rem;margin-top:.6rem;display:none;}
+
+/* SIDEBAR */
+#sb{width:220px;background:var(--sb);flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--border);overflow-y:auto;}
+.sb-logo{padding:1.2rem 1rem .8rem;border-bottom:1px solid var(--border);}
+.sb-logo h3{font-size:.95rem;}
+.sb-logo small{color:var(--muted);font-size:.72rem;}
+.sb-sec{padding:.4rem 0;}
+.sb-lbl{font-size:.62rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);padding:.5rem 1rem .2rem;font-weight:600;}
+.nav{display:flex;align-items:center;gap:.55rem;padding:.48rem 1rem;cursor:pointer;font-size:.84rem;border-left:3px solid transparent;color:#b0b0cc;transition:all .12s;}
+.nav:hover{background:rgba(255,255,255,.04);color:var(--text);}
+.nav.on{background:rgba(108,99,255,.12);border-left-color:var(--accent);color:var(--accent);}
+.nav .cnt{margin-left:auto;background:var(--border);font-size:.68rem;padding:.1rem .4rem;border-radius:10px;min-width:24px;text-align:center;}
+.sb-foot{margin-top:auto;padding:.8rem 1rem;border-top:1px solid var(--border);display:flex;gap:.5rem;align-items:center;}
+.sb-foot small{color:var(--muted);font-size:.72rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.btn-dc{background:transparent;color:var(--muted);border:1px solid var(--border);font-size:.72rem;padding:.25rem .6rem;border-radius:6px;cursor:pointer;white-space:nowrap;}
+.btn-dc:hover{background:var(--border);}
+
+/* MAIN */
+#main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;}
+.topbar{padding:.75rem 1.5rem;border-bottom:1px solid var(--border);background:var(--card);display:flex;align-items:center;gap:1rem;position:sticky;top:0;z-index:50;}
+.topbar h2{font-size:1rem;font-weight:600;}
+.topbar-r{margin-left:auto;display:flex;align-items:center;gap:.75rem;color:var(--muted);font-size:.78rem;}
+.btn-ref{background:transparent;color:var(--muted);border:1px solid var(--border);font-size:.78rem;padding:.3rem .7rem;border-radius:6px;cursor:pointer;}
+.btn-ref:hover{background:var(--border);}
+.content{flex:1;overflow-y:auto;padding:1.5rem;}
+
+/* SECTIONS */
+.sec{display:none;}.sec.on{display:block;}
+
+/* STAT CARDS */
+.sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:1rem;margin-bottom:1.5rem;}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;}
+.sc .si{font-size:1.4rem;margin-bottom:.4rem;}
+.sc .sv{font-size:1.9rem;font-weight:700;line-height:1;margin-bottom:.25rem;}
+.sc .sl{font-size:.75rem;color:var(--muted);}
+.sc .ss{font-size:.72rem;color:var(--muted);margin-top:.3rem;}
+
+/* CHARTS */
+.cr{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;}
+@media(max-width:900px){.cr{grid-template-columns:1fr;}}
+.cc{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;}
+.cc h4{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.9rem;font-weight:600;}
+.br{display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem;font-size:.8rem;}
+.bl{width:90px;text-align:right;color:var(--muted);flex-shrink:0;font-size:.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bt{flex:1;background:var(--bg);border-radius:4px;height:14px;overflow:hidden;}
+.bf{height:100%;border-radius:4px;transition:width .5s ease;}
+.bv{width:36px;font-size:.72rem;color:var(--muted);text-align:right;}
+
+/* TABLE */
+.sh{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap;}
+.sh h3{font-size:1rem;}
+.cb{background:var(--border);color:var(--muted);font-size:.72rem;padding:.15rem .5rem;border-radius:10px;}
+.tc{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.tb{padding:.75rem 1rem;display:flex;gap:.5rem;align-items:center;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.si2{flex:1;min-width:180px;padding:.38rem .7rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.82rem;}
+.si2:focus{outline:none;border-color:var(--accent);}
+.tb select{padding:.38rem .6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.82rem;cursor:pointer;}
+.tw{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.82rem;}
+thead{background:var(--card);z-index:5;}
+th{padding:.6rem .8rem;text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap;user-select:none;font-weight:600;}
+th:hover{color:var(--text);}
+th.sa::after{content:' ↑';color:var(--accent);}
+th.sd::after{content:' ↓';color:var(--accent);}
+td{padding:.55rem .8rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--text);vertical-align:middle;}
+td.tr{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default;}
+tr:hover td{background:rgba(255,255,255,.025);}
+tr:last-child td{border-bottom:none;}
+
+/* BADGES */
+.badge{display:inline-block;padding:.13rem .45rem;border-radius:8px;font-size:.7rem;font-weight:600;white-space:nowrap;}
+.b-verified,.b-safe{background:rgba(46,213,115,.15);color:#2ed573;}
+.b-candidate{background:rgba(255,165,2,.15);color:#ffa502;}
+.b-contains,.b-danger{background:rgba(255,71,87,.15);color:#ff4757;}
+.b-may_contain,.b-warning{background:rgba(255,165,2,.15);color:#ffa502;}
+.b-facility{background:rgba(108,99,255,.15);color:#9c8fff;}
+.b-unknown{background:rgba(107,107,138,.2);color:#9090b0;}
+.b-high{background:rgba(255,71,87,.15);color:#ff4757;}
+.b-medium{background:rgba(255,165,2,.15);color:#ffa502;}
+.b-scan_accuracy,.b-suggestion,.b-bug_report,.b-general{background:rgba(94,196,255,.15);color:#5ec4ff;}
+.b-true{background:rgba(46,213,115,.12);color:#2ed573;}
+.b-false{background:rgba(255,71,87,.12);color:#ff4757;}
+
+/* PAGINATION */
+.pg{display:flex;align-items:center;gap:.3rem;padding:.75rem 1rem;border-top:1px solid var(--border);flex-wrap:wrap;}
+.pgi{color:var(--muted);font-size:.78rem;margin-right:auto;}
+.pb{padding:.28rem .6rem;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:5px;cursor:pointer;font-size:.78rem;}
+.pb:hover:not(:disabled){background:var(--border);}
+.pb.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+.pb:disabled{opacity:.4;cursor:default;}
+
+/* MISC */
+.lr td,.er td{text-align:center;padding:2rem;color:var(--muted);}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:.4rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.errbox{background:rgba(255,71,87,.08);border:1px solid rgba(255,71,87,.2);border-radius:8px;padding:.7rem 1rem;color:#ff8090;font-size:.82rem;margin:.75rem 0;}
+.btn-xl{background:#1b5e3b;color:#2ed573;border:1px solid #2ed573;font-size:.78rem;padding:.3rem .7rem;border-radius:6px;cursor:pointer;}
+.btn-xl:hover{background:#2ed57322;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="lo">
+  <div class="lbox">
+    <div class="ico">🛡️</div>
+    <h2>AllergyGuard Admin</h2>
+    <p class="desc">Queries run via a server-side Edge Function — the service role key never touches the browser. Enter the URL and the <strong>admin secret</strong> you set with <code>supabase secrets set</code>.</p>
+    <div class="field">
+      <label>Supabase Project URL</label>
+      <input type="text" id="iurl" placeholder="https://xxxxxxxxxxxx.supabase.co" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Admin Secret (ADMIN_DASHBOARD_SECRET)</label>
+      <input type="password" id="ikey" placeholder="your-strong-password">
+    </div>
+    <label class="chkrow"><input type="checkbox" id="irem"> Remember in localStorage</label>
+    <button class="btn-connect" onclick="doLogin()">Connect →</button>
+    <div class="lerr" id="lerr"></div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<nav id="sb">
+  <div class="sb-logo"><h3>🛡️ AllergyGuard</h3><small>Admin Dashboard</small></div>
+  <div class="sb-sec">
+    <div class="sb-lbl">Analytics</div>
+    <div class="nav on" data-s="overview" onclick="nav(this)">📊 Overview</div>
+  </div>
+  <div class="sb-sec">
+    <div class="sb-lbl">Data Tables</div>
+    <div class="nav" data-s="patterns" onclick="nav(this)">🔤 Context Patterns <span class="cnt" id="cnt-patterns">—</span></div>
+    <div class="nav" data-s="feedback" onclick="nav(this)">💬 User Feedback <span class="cnt" id="cnt-feedback">—</span></div>
+    <div class="nav" data-s="reports" onclick="nav(this)">📦 Product Reports <span class="cnt" id="cnt-reports">—</span></div>
+    <div class="nav" data-s="scans" onclick="nav(this)">📷 Scan History <span class="cnt" id="cnt-scans">—</span></div>
+  </div>
+  <div class="sb-sec">
+    <div class="sb-lbl">Reference</div>
+    <div class="nav" data-s="allergens" onclick="nav(this)">🥜 Allergens <span class="cnt" id="cnt-allergens">—</span></div>
+    <div class="nav" data-s="datasets" onclick="nav(this)">📁 App Datasets</div>
+  </div>
+  <div class="sb-foot"><small id="sb-url">—</small><button class="btn-dc" onclick="doLogout()">Disconnect</button></div>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+  <div class="topbar">
+    <h2 id="stitle">Overview</h2>
+    <div class="topbar-r">
+      <span id="rtime"></span>
+      <button class="btn-ref" onclick="refreshCur()">↺ Refresh</button>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div id="sec-overview" class="sec on">
+      <div class="sg" id="ov-stats"><div class="sc"><span class="spin"></span></div></div>
+      <div class="cr" id="ov-charts"></div>
+    </div>
+
+    <!-- CONTEXT PATTERNS -->
+    <div id="sec-patterns" class="sec">
+      <div class="sh"><h3>Context Patterns</h3><span class="cb" id="hdr-patterns">…</span>
+        <div style="margin-left:auto"><button class="btn-xl" onclick="xls('patterns',this)">⬇ Export XLS</button></div></div>
+      <div class="tc">
+        <div class="tb">
+          <input class="si2" placeholder="Search pattern text, OCR source…" oninput="T.patterns.onSearch(this.value)">
+          <select onchange="T.patterns.onFilter('language_code',this.value)" id="flt-plang"><option value="">All languages</option></select>
+          <select onchange="T.patterns.onFilter('pattern_type',this.value)">
+            <option value="">All types</option>
+            <option>contains</option><option>may_contain</option><option>facility</option><option>unknown</option>
+          </select>
+          <select onchange="T.patterns.onFilter('status',this.value)">
+            <option value="">All statuses</option><option>verified</option><option>candidate</option>
+          </select>
+        </div>
+        <div class="tw"><table>
+          <thead><tr>
+            <th onclick="T.patterns.srt('id')" data-c="id">ID</th>
+            <th onclick="T.patterns.srt('pattern_text')" data-c="pattern_text">Pattern Text</th>
+            <th onclick="T.patterns.srt('language_code')" data-c="language_code">Lang</th>
+            <th onclick="T.patterns.srt('pattern_type')" data-c="pattern_type">Type</th>
+            <th onclick="T.patterns.srt('confidence')" data-c="confidence">Conf</th>
+            <th onclick="T.patterns.srt('status')" data-c="status">Status</th>
+            <th onclick="T.patterns.srt('seen_count')" data-c="seen_count">Seen</th>
+            <th onclick="T.patterns.srt('created_at')" data-c="created_at">Created</th>
+            <th onclick="T.patterns.srt('promoted_at')" data-c="promoted_at">Promoted</th>
+            <th>Source OCR</th>
+          </tr></thead>
+          <tbody id="tb-patterns"></tbody>
+        </table></div>
+        <div class="pg" id="pg-patterns"></div>
+      </div>
+    </div>
+
+    <!-- USER FEEDBACK -->
+    <div id="sec-feedback" class="sec">
+      <div class="sh"><h3>User Feedback</h3><span class="cb" id="hdr-feedback">…</span>
+        <div style="margin-left:auto"><button class="btn-xl" onclick="xls('feedback',this)">⬇ Export XLS</button></div></div>
+      <div class="tc">
+        <div class="tb">
+          <input class="si2" placeholder="Search device ID, barcode, comment…" oninput="T.feedback.onSearch(this.value)">
+          <select onchange="T.feedback.onFilter('feedback_type',this.value)">
+            <option value="">All types</option>
+            <option>scan_accuracy</option><option>suggestion</option><option>bug_report</option><option>general</option>
+          </select>
+          <select onchange="T.feedback.onFilter('result_level',this.value)">
+            <option value="">All levels</option>
+            <option>danger</option><option>warning</option><option>safe</option><option>unknown</option>
+          </select>
+          <select onchange="T.feedback.onFilter('is_correct',this.value)">
+            <option value="">Accuracy: all</option><option value="true">Correct</option><option value="false">Incorrect</option>
+          </select>
+          <select onchange="T.feedback.onFilter('country_code',this.value)" id="flt-fcountry"><option value="">All countries</option></select>
+        </div>
+        <div class="tw"><table>
+          <thead><tr>
+            <th onclick="T.feedback.srt('created_at')" data-c="created_at">Date</th>
+            <th onclick="T.feedback.srt('feedback_type')" data-c="feedback_type">Type</th>
+            <th onclick="T.feedback.srt('result_level')" data-c="result_level">Level</th>
+            <th onclick="T.feedback.srt('is_correct')" data-c="is_correct">Correct?</th>
+            <th onclick="T.feedback.srt('expected_level')" data-c="expected_level">Expected</th>
+            <th onclick="T.feedback.srt('product_barcode')" data-c="product_barcode">Barcode</th>
+            <th>Allergens</th>
+            <th>Comment</th>
+            <th onclick="T.feedback.srt('language_code')" data-c="language_code">Lang</th>
+            <th onclick="T.feedback.srt('country_code')" data-c="country_code">Country</th>
+            <th onclick="T.feedback.srt('app_version')" data-c="app_version">Version</th>
+            <th>Device ID</th>
+          </tr></thead>
+          <tbody id="tb-feedback"></tbody>
+        </table></div>
+        <div class="pg" id="pg-feedback"></div>
+      </div>
+    </div>
+
+    <!-- PRODUCT REPORTS -->
+    <div id="sec-reports" class="sec">
+      <div class="sh"><h3>Product Reports</h3><span class="cb" id="hdr-reports">…</span>
+        <div style="margin-left:auto"><button class="btn-xl" onclick="xls('reports',this)">⬇ Export XLS</button></div></div>
+      <div class="tc">
+        <div class="tb">
+          <input class="si2" placeholder="Search barcode, product name, brand…" oninput="T.reports.onSearch(this.value)">
+          <select onchange="T.reports.onFilter('report_type',this.value)" id="flt-rtype"><option value="">All types</option></select>
+        </div>
+        <div class="tw"><table>
+          <thead><tr>
+            <th onclick="T.reports.srt('id')" data-c="id">ID</th>
+            <th onclick="T.reports.srt('barcode')" data-c="barcode">Barcode</th>
+            <th onclick="T.reports.srt('product_name')" data-c="product_name">Product</th>
+            <th onclick="T.reports.srt('brand')" data-c="brand">Brand</th>
+            <th onclick="T.reports.srt('allergen_id')" data-c="allergen_id">Allergen ID</th>
+            <th onclick="T.reports.srt('report_type')" data-c="report_type">Report Type</th>
+            <th>Confirmations</th>
+            <th>Device ID</th>
+            <th onclick="T.reports.srt('created_at')" data-c="created_at">Created</th>
+          </tr></thead>
+          <tbody id="tb-reports"></tbody>
+        </table></div>
+        <div class="pg" id="pg-reports"></div>
+      </div>
+    </div>
+
+    <!-- SCAN HISTORY -->
+    <div id="sec-scans" class="sec">
+      <div class="sh"><h3>Scan History</h3><span class="cb" id="hdr-scans">…</span>
+        <div style="margin-left:auto"><button class="btn-xl" onclick="xls('scans',this)">⬇ Export XLS</button></div></div>
+      <div class="tc">
+        <div class="tb">
+          <input class="si2" placeholder="Search barcode, product name, user ID…" oninput="T.scans.onSearch(this.value)">
+          <select onchange="T.scans.onFilter('result',this.value)">
+            <option value="">All results</option>
+            <option>danger</option><option>warning</option><option>safe</option><option>unknown</option>
+          </select>
+        </div>
+        <div class="tw"><table>
+          <thead><tr>
+            <th onclick="T.scans.srt('scanned_at')" data-c="scanned_at">Date</th>
+            <th onclick="T.scans.srt('product_name')" data-c="product_name">Product</th>
+            <th onclick="T.scans.srt('barcode')" data-c="barcode">Barcode</th>
+            <th onclick="T.scans.srt('result')" data-c="result">Result</th>
+            <th onclick="T.scans.srt('confidence')" data-c="confidence">Conf</th>
+            <th>Allergens</th>
+            <th>OCR Text</th>
+            <th onclick="T.scans.srt('user_id')" data-c="user_id">User ID</th>
+          </tr></thead>
+          <tbody id="tb-scans"></tbody>
+        </table></div>
+        <div class="pg" id="pg-scans"></div>
+      </div>
+    </div>
+
+    <!-- ALLERGENS -->
+    <div id="sec-allergens" class="sec">
+      <div class="sh"><h3>Allergens Catalog</h3><span class="cb" id="hdr-allergens">…</span>
+        <div style="margin-left:auto"><button class="btn-xl" onclick="xls('allergens',this)">⬇ Export XLS</button></div></div>
+      <div class="tc">
+        <div class="tb">
+          <input class="si2" placeholder="Search by key…" oninput="T.allergens.onSearch(this.value)">
+          <select onchange="T.allergens.onFilter('severity',this.value)">
+            <option value="">All severity</option><option>high</option><option>medium</option>
+          </select>
+          <select onchange="T.allergens.onFilter('eu_regulated',this.value)">
+            <option value="">EU: all</option><option value="true">EU regulated</option><option value="false">Not EU</option>
+          </select>
+          <select onchange="T.allergens.onFilter('is_active',this.value)">
+            <option value="">Status: all</option><option value="true">Active</option><option value="false">Inactive</option>
+          </select>
+        </div>
+        <div class="tw"><table>
+          <thead><tr>
+            <th onclick="T.allergens.srt('id')" data-c="id">ID</th>
+            <th onclick="T.allergens.srt('name_key')" data-c="name_key">Key</th>
+            <th>Emoji</th>
+            <th onclick="T.allergens.srt('severity')" data-c="severity">Severity</th>
+            <th onclick="T.allergens.srt('eu_regulated')" data-c="eu_regulated">EU</th>
+            <th onclick="T.allergens.srt('is_active')" data-c="is_active">Active</th>
+            <th onclick="T.allergens.srt('dataset_version')" data-c="dataset_version">Ver</th>
+            <th>Names (IT / EN / DE)</th>
+            <th onclick="T.allergens.srt('updated_at')" data-c="updated_at">Updated</th>
+          </tr></thead>
+          <tbody id="tb-allergens"></tbody>
+        </table></div>
+        <div class="pg" id="pg-allergens"></div>
+      </div>
+    </div>
+
+    <!-- APP DATASETS -->
+    <div id="sec-datasets" class="sec">
+      <div class="sh"><h3>App Datasets</h3>
+        <div style="margin-left:auto"><button class="btn-xl" onclick="xls('datasets',this)">⬇ Export XLS</button></div></div>
+      <div class="tc">
+        <div class="tb">
+          <input class="si2" placeholder="Search…" oninput="T.datasets.onSearch(this.value)">
+        </div>
+        <div class="tw"><table>
+          <thead><tr>
+            <th onclick="T.datasets.srt('dataset_name')" data-c="dataset_name">Dataset</th>
+            <th onclick="T.datasets.srt('version')" data-c="version">Version</th>
+            <th onclick="T.datasets.srt('updated_at')" data-c="updated_at">Updated At</th>
+            <th>Summary</th>
+            <th>Added Keys</th>
+          </tr></thead>
+          <tbody id="tb-datasets"></tbody>
+        </table></div>
+        <div class="pg" id="pg-datasets"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Auth via Edge Function proxy (service role key stays server-side) ──
+let BASE = '', KEY = '';
+const SK = 'ag_admin';
+
+async function api(action, params={}) {
+  const res = await fetch(`${BASE}/functions/v1/admin-query`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-admin-secret': KEY },
+    body: JSON.stringify({ action, ...params })
+  });
+  if (!res.ok) {
+    let m = await res.text();
+    try { m = JSON.parse(m).error || m; } catch {}
+    throw new Error(m);
+  }
+  return res.json();
+}
+
+async function pgFetch(table, opts={}, forExport=false) {
+  return api('query', {
+    table,
+    filters: opts.filters||{}, search: opts.search||'', sc: opts.sc||[],
+    sortCol: opts.sortCol, sortAsc: opts.sortAsc,
+    page: opts.page||0, PS: opts.PS||50, forExport
+  });
+}
+async function pgCount(table, filters={}) {
+  const { count } = await api('count', { table, filters });
+  return count || 0;
+}
+async function pgCol(table, col) {
+  return api('col', { table, col });
+}
+
+async function doLogin() {
+  const url = document.getElementById('iurl').value.trim();
+  const key = document.getElementById('ikey').value.trim();
+  const rem = document.getElementById('irem').checked;
+  document.getElementById('lerr').style.display = 'none';
+  if (!url||!key) return showErr('URL and admin secret are required.');
+  if (!url.startsWith('https://')) return showErr('URL must start with https://');
+  BASE = url.replace(/\/$/,''); KEY = key;
+  try {
+    await api('ping');
+    (rem?localStorage:sessionStorage).setItem(SK, JSON.stringify({url,key}));
+    document.getElementById('lo').style.display = 'none';
+    document.getElementById('sb-url').textContent = new URL(url).hostname;
+    initDash();
+  } catch(e) { BASE=''; KEY=''; showErr('Connection failed: '+e.message); }
+}
+function showErr(m) { const e=document.getElementById('lerr'); e.textContent=m; e.style.display='block'; }
+function doLogout() { BASE=''; KEY=''; localStorage.removeItem(SK); sessionStorage.removeItem(SK); location.reload(); }
+(function autoLogin() {
+  const saved = JSON.parse(localStorage.getItem(SK)||sessionStorage.getItem(SK)||'null');
+  if (saved?.url&&saved?.key) {
+    document.getElementById('iurl').value=saved.url;
+    document.getElementById('ikey').value=saved.key;
+    document.getElementById('irem').checked=!!localStorage.getItem(SK);
+    setTimeout(doLogin,60);
+  }
+})();
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&document.getElementById('lo').style.display!=='none') doLogin(); });
+
+// ── Navigation ────────────────────────────────────────────
+let curSec = 'overview';
+function nav(el) {
+  document.querySelectorAll('.nav').forEach(n => n.classList.remove('on'));
+  el.classList.add('on');
+  const s = el.dataset.s;
+  document.querySelectorAll('.sec').forEach(x => x.classList.remove('on'));
+  document.getElementById('sec-'+s).classList.add('on');
+  document.getElementById('stitle').textContent = el.textContent.trim().replace(/[^\w\s]/gu,'').trim();
+  curSec = s;
+  if (s !== 'overview' && T[s]) T[s].loadIfNeeded();
+}
+function refreshCur() { if (curSec==='overview') loadOverview(); else T[curSec]?.reload(); }
+
+// ── Helpers ───────────────────────────────────────────────
+const fd = v => v ? new Date(v).toLocaleString('it-IT',{dateStyle:'short',timeStyle:'short'}) : '—';
+const fc = v => v!=null ? (v*100).toFixed(0)+'%' : '—';
+const esc = v => String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function tdTr(v, n=40) {
+  if (!v) return `<td class="tr" style="color:var(--muted)">—</td>`;
+  const s = String(v);
+  return s.length > n
+    ? `<td class="tr" title="${esc(s)}">${esc(s.slice(0,n))}…</td>`
+    : `<td>${esc(s)}</td>`;
+}
+function bdg(v) {
+  if (v==null||v==='') return `<span style="color:var(--muted)">—</span>`;
+  const cls = 'b-'+String(v).replace(/[^a-z0-9_]/gi,'_');
+  return `<span class="badge ${cls}">${esc(String(v))}</span>`;
+}
+function boolBdg(v) {
+  if (v===true) return `<span class="badge b-true">Yes</span>`;
+  if (v===false) return `<span class="badge b-false">No</span>`;
+  return `<span style="color:var(--muted)">—</span>`;
+}
+function arrTd(v, title) {
+  const arr = Array.isArray(v) ? v : [];
+  const s = arr.join(', ') || '—';
+  return arr.length > 3
+    ? `<td class="tr" title="${esc(s)}">${esc(arr.slice(0,3).join(', '))}…</td>`
+    : `<td>${esc(s)}</td>`;
+}
+
+// ── TableManager ──────────────────────────────────────────
+class TM {
+  constructor(cfg) {
+    Object.assign(this, { sortCol: cfg.ds?.col||'id', sortAsc: cfg.ds?.asc??false, page: 0, PS: 50, total: 0, filters: {}, search: '', loaded: false }, cfg);
+  }
+  loadIfNeeded() { if (!this.loaded) this.load(); }
+  reload() { this.page = 0; this.loaded = false; this.load(); }
+
+  query(forExport=false) {
+    return pgFetch(this.tbl, {
+      filters: this.filters, search: this.search, sc: this.sc,
+      sortCol: this.sortCol, sortAsc: this.sortAsc, page: this.page, PS: this.PS,
+    }, forExport);
+  }
+
+  async load() {
+    const tbody = document.getElementById('tb-'+this.name);
+    const hdr = document.getElementById('hdr-'+this.name);
+    const pgEl = document.getElementById('pg-'+this.name);
+    tbody.innerHTML = `<tr class="lr"><td colspan="99"><span class="spin"></span> Loading…</td></tr>`;
+    try {
+      const { data, count } = await this.query();
+      this.total = count ?? 0;
+      this.loaded = true;
+      if (hdr) hdr.textContent = this.total.toLocaleString()+' rows';
+      const c = document.getElementById('cnt-'+this.name);
+      if (c) c.textContent = this.total;
+      this.renderBody(tbody, data);
+      this.renderPg(pgEl);
+      this.markSort();
+      document.getElementById('rtime').textContent = 'Last: '+new Date().toLocaleTimeString();
+    } catch(e) {
+      tbody.innerHTML = `<tr class="er"><td colspan="99" style="color:var(--danger)">Error: ${esc(e.message)}</td></tr>`;
+      if (hdr) hdr.textContent = 'error';
+    }
+  }
+
+  renderBody(tbody, data) {
+    if (!data||!data.length) { tbody.innerHTML = '<tr class="lr"><td colspan="99">No data</td></tr>'; return; }
+    tbody.innerHTML = data.map(r => this.row(r)).join('');
+  }
+
+  renderPg(el) {
+    if (!el) return;
+    const tp = Math.ceil(this.total/this.PS);
+    if (tp<=1) { el.innerHTML=''; return; }
+    const f=this.page*this.PS+1, t=Math.min((this.page+1)*this.PS,this.total);
+    const n=this.name;
+    let h=`<span class="pgi">Rows ${f}–${t} of ${this.total.toLocaleString()}</span>`;
+    h+=`<button class="pb" onclick="T.${n}.go(0)" ${this.page===0?'disabled':''}>«</button>`;
+    h+=`<button class="pb" onclick="T.${n}.go(${this.page-1})" ${this.page===0?'disabled':''}>‹</button>`;
+    const s=Math.max(0,this.page-2), e=Math.min(tp-1,s+4);
+    for(let i=s;i<=e;i++) h+=`<button class="pb ${i===this.page?'on':''}" onclick="T.${n}.go(${i})">${i+1}</button>`;
+    h+=`<button class="pb" onclick="T.${n}.go(${this.page+1})" ${this.page>=tp-1?'disabled':''}>›</button>`;
+    h+=`<button class="pb" onclick="T.${n}.go(${tp-1})" ${this.page>=tp-1?'disabled':''}>»</button>`;
+    el.innerHTML=h;
+  }
+
+  go(p) { this.page=p; this.load(); }
+  srt(col) { this.sortAsc = this.sortCol===col ? !this.sortAsc : false; this.sortCol=col; this.page=0; this.load(); }
+  onSearch(v) { clearTimeout(this._t); this._t=setTimeout(()=>{ this.search=v.trim(); this.page=0; this.load(); },350); }
+  onFilter(col,v) { this.filters[col]=v; this.page=0; this.load(); }
+
+  markSort() {
+    const tbl = document.querySelector(`#sec-${this.name} table`);
+    if (!tbl) return;
+    tbl.querySelectorAll('th[data-c]').forEach(th => {
+      th.classList.remove('sa','sd');
+      if (th.dataset.c===this.sortCol) th.classList.add(this.sortAsc?'sa':'sd');
+    });
+  }
+
+  async doExport(btn) {
+    if (btn) { btn.disabled=true; btn.textContent='⏳…'; }
+    try {
+      const { data } = await this.query(true);
+      const rows = data.map(r => {
+        const f={};
+        for (const [k,v] of Object.entries(r)) f[k]=Array.isArray(v)?v.join(', '):v;
+        return f;
+      });
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, this.tbl.slice(0,31));
+      XLSX.writeFile(wb, `ag_${this.name}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    } catch(e) { alert('Export error: '+e.message); }
+    finally { if (btn) { btn.disabled=false; btn.textContent='⬇ Export XLS'; } }
+  }
+}
+
+function xls(name, btn) { T[name]?.doExport(btn); }
+
+// ── Table definitions ─────────────────────────────────────
+const T = {
+  patterns: new TM({ name:'patterns', tbl:'context_patterns', sc:['pattern_text','source_ocr_text'], ds:{col:'created_at',asc:false},
+    row: r => `<tr>
+      <td>${r.id}</td>
+      ${tdTr(r.pattern_text,55)}
+      <td>${r.language_code||'—'}</td>
+      <td>${bdg(r.pattern_type)}</td>
+      <td>${fc(r.confidence)}</td>
+      <td>${bdg(r.status)}</td>
+      <td>${r.seen_count??0} <small style="color:var(--muted)">(${Array.isArray(r.device_ids)?r.device_ids.length:0}d)</small></td>
+      <td style="white-space:nowrap">${fd(r.created_at)}</td>
+      <td style="white-space:nowrap">${r.promoted_at?fd(r.promoted_at):'<span style="color:var(--muted)">—</span>'}</td>
+      ${tdTr(r.source_ocr_text,40)}
+    </tr>`
+  }),
+
+  feedback: new TM({ name:'feedback', tbl:'user_feedback', sc:['device_id','product_barcode','comment'], ds:{col:'created_at',asc:false},
+    row: r => `<tr>
+      <td style="white-space:nowrap">${fd(r.created_at)}</td>
+      <td>${bdg(r.feedback_type)}</td>
+      <td>${r.result_level?bdg(r.result_level):'<span style="color:var(--muted)">—</span>'}</td>
+      <td>${boolBdg(r.is_correct)}</td>
+      <td>${r.expected_level?bdg(r.expected_level):'<span style="color:var(--muted)">—</span>'}</td>
+      <td>${esc(r.product_barcode||'—')}</td>
+      ${arrTd(r.allergen_keys)}
+      ${tdTr(r.comment,45)}
+      <td>${r.language_code||'—'}</td>
+      <td>${r.country_code||'—'}</td>
+      <td>${r.app_version||'—'}</td>
+      <td class="tr" style="max-width:110px" title="${esc(r.device_id||'')}">${r.device_id?esc(r.device_id.slice(0,12))+'…':'—'}</td>
+    </tr>`
+  }),
+
+  reports: new TM({ name:'reports', tbl:'product_reports', sc:['barcode','product_name','brand'], ds:{col:'created_at',asc:false},
+    row: r => `<tr>
+      <td>${r.id}</td>
+      <td>${esc(r.barcode||'—')}</td>
+      ${tdTr(r.product_name,35)}
+      <td>${esc(r.brand||'—')}</td>
+      <td>${r.allergen_id||'—'}</td>
+      <td>${bdg(r.report_type)}</td>
+      <td>${Array.isArray(r.confirmed_by)?r.confirmed_by.length:0}</td>
+      <td class="tr" style="max-width:110px" title="${esc(r.device_id||'')}">${r.device_id?esc(r.device_id.slice(0,12))+'…':'—'}</td>
+      <td style="white-space:nowrap">${fd(r.created_at)}</td>
+    </tr>`
+  }),
+
+  scans: new TM({ name:'scans', tbl:'scan_history', sc:['barcode','product_name','user_id'], ds:{col:'scanned_at',asc:false},
+    row: r => `<tr>
+      <td style="white-space:nowrap">${fd(r.scanned_at)}</td>
+      ${tdTr(r.product_name,35)}
+      <td>${esc(r.barcode||'—')}</td>
+      <td>${bdg(r.result)}</td>
+      <td>${fc(r.confidence)}</td>
+      ${arrTd(r.allergens)}
+      ${tdTr(r.ocr_text,40)}
+      <td class="tr" style="max-width:110px" title="${esc(r.user_id||'')}">${r.user_id?esc(r.user_id.slice(0,12))+'…':'—'}</td>
+    </tr>`
+  }),
+
+  allergens: new TM({ name:'allergens', tbl:'allergens', sc:['name_key'], ds:{col:'id',asc:true},
+    row: r => {
+      const n=r.names||{}, p=[n.it,n.en,n.de].filter(Boolean).join(' / ');
+      return `<tr>
+        <td>${r.id}</td>
+        <td><strong>${esc(r.name_key||'—')}</strong></td>
+        <td style="font-size:1.2rem">${r.icon_emoji||'—'}</td>
+        <td>${bdg(r.severity)}</td>
+        <td>${boolBdg(r.eu_regulated)}</td>
+        <td>${boolBdg(r.is_active)}</td>
+        <td>${r.dataset_version||1}</td>
+        <td class="tr" style="max-width:200px" title="${esc(p)}">${esc(p)||'—'}</td>
+        <td style="white-space:nowrap">${fd(r.updated_at)}</td>
+      </tr>`;
+    }
+  }),
+
+  datasets: new TM({ name:'datasets', tbl:'app_datasets', sc:['dataset_name','summary'], ds:{col:'dataset_name',asc:true},
+    row: r => `<tr>
+      <td><strong>${esc(r.dataset_name)}</strong></td>
+      <td>v${r.version}</td>
+      <td style="white-space:nowrap">${fd(r.updated_at)}</td>
+      ${tdTr(r.summary,60)}
+      ${arrTd(r.added_keys)}
+    </tr>`
+  }),
+};
+
+// ── Overview ──────────────────────────────────────────────
+async function loadOverview() {
+  document.getElementById('ov-stats').innerHTML = `<div class="sc"><span class="spin"></span></div>`;
+  document.getElementById('ov-charts').innerHTML = '';
+  try {
+    const grp = async (tbl, col) => {
+      const data = await pgCol(tbl, col);
+      const m={};
+      data.forEach(r=>{ const v=String(r[col]??'null'); m[v]=(m[v]||0)+1; });
+      return Object.entries(m).sort((a,b)=>b[1]-a[1]);
+    };
+
+    const [cp,fb,rep,sc,alg,cpV,cpC] = await Promise.all([
+      pgCount('context_patterns'), pgCount('user_feedback'), pgCount('product_reports'),
+      pgCount('scan_history'), pgCount('allergens'),
+      pgCount('context_patterns',{status:'verified'}), pgCount('context_patterns',{status:'candidate'})
+    ]);
+    const [lgDist,typDist,fbType,fbLevel] = await Promise.all([
+      grp('context_patterns','language_code'),
+      grp('context_patterns','pattern_type'),
+      grp('user_feedback','feedback_type'),
+      grp('user_feedback','result_level'),
+    ]);
+
+    ['patterns','feedback','reports','scans','allergens'].forEach((k,i) => {
+      const el=document.getElementById('cnt-'+k);
+      if(el) el.textContent=[cp,fb,rep,sc,alg][i];
+    });
+
+    document.getElementById('ov-stats').innerHTML = `
+      <div class="sc"><div class="si">🔤</div><div class="sv">${cp.toLocaleString()}</div><div class="sl">Context Patterns</div><div class="ss">${cpV} verified · ${cpC} candidate</div></div>
+      <div class="sc"><div class="si">💬</div><div class="sv">${fb.toLocaleString()}</div><div class="sl">User Feedback</div></div>
+      <div class="sc"><div class="si">📦</div><div class="sv">${rep.toLocaleString()}</div><div class="sl">Product Reports</div></div>
+      <div class="sc"><div class="si">📷</div><div class="sv">${sc.toLocaleString()}</div><div class="sl">Scan History</div></div>
+      <div class="sc"><div class="si">🥜</div><div class="sv">${alg.toLocaleString()}</div><div class="sl">Allergens</div></div>
+    `;
+
+    const TYPE_CLR = {contains:'#ff4757',may_contain:'#ffa502',facility:'#9c8fff',unknown:'#747d8c',danger:'#ff4757',warning:'#ffa502',safe:'#2ed573'};
+    document.getElementById('ov-charts').innerHTML = `
+      <div class="cc"><h4>Patterns by Language</h4><div id="ch-lang"></div></div>
+      <div class="cc"><h4>Patterns by Type</h4><div id="ch-type"></div></div>
+      <div class="cc"><h4>Feedback by Type</h4><div id="ch-fbtype"></div></div>
+      <div class="cc"><h4>Feedback by Result</h4><div id="ch-fblev"></div></div>
+    `;
+    barChart('ch-lang', lgDist, {}, '#6c63ff');
+    barChart('ch-type', typDist, TYPE_CLR, '#6c63ff');
+    barChart('ch-fbtype', fbType, {}, '#5ec4ff');
+    barChart('ch-fblev', fbLevel, TYPE_CLR, '#5ec4ff');
+
+  } catch(e) {
+    document.getElementById('ov-stats').innerHTML = `<div class="errbox" style="grid-column:1/-1">Error: ${esc(e.message)}</div>`;
+  }
+}
+
+function barChart(id, entries, clrMap, def) {
+  const el=document.getElementById(id);
+  if(!el) return;
+  if(!entries||!entries.length){el.innerHTML='<span style="color:var(--muted);font-size:.8rem">No data</span>';return;}
+  const mx=Math.max(...entries.map(([,v])=>v),1);
+  el.innerHTML=entries.slice(0,10).map(([lbl,cnt])=>{
+    const pct=Math.round(cnt/mx*100), clr=clrMap[lbl]||def;
+    return `<div class="br"><div class="bl" title="${esc(lbl)}">${esc(lbl)}</div><div class="bt"><div class="bf" style="width:${pct}%;background:${clr}"></div></div><div class="bv">${cnt}</div></div>`;
+  }).join('');
+}
+
+// ── Init ──────────────────────────────────────────────────
+async function initDash() {
+  loadOverview();
+  pgCol('context_patterns','language_code').then(data => {
+    const langs=[...new Set(data.map(r=>r.language_code))].sort();
+    const sel=document.getElementById('flt-plang');
+    langs.forEach(l=>{ const o=document.createElement('option'); o.value=l; o.textContent=l; sel.appendChild(o); });
+  }).catch(()=>{});
+  pgCol('user_feedback','country_code').then(data => {
+    const cc=[...new Set(data.map(r=>r.country_code).filter(Boolean))].sort();
+    const sel=document.getElementById('flt-fcountry');
+    cc.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o); });
+  }).catch(()=>{});
+  pgCol('product_reports','report_type').then(data => {
+    const types=[...new Set(data.map(r=>r.report_type))].sort();
+    const sel=document.getElementById('flt-rtype');
+    types.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; sel.appendChild(o); });
+  }).catch(()=>{});
+}
+</script>
+</body>
+</html>
