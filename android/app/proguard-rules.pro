@@ -2,14 +2,14 @@
 -keep class io.flutter.** { *; }
 -keep class io.flutter.plugins.** { *; }
 
-# ML Kit Text Recognition: script recognizers non inclusi (usiamo solo Latin)
--dontwarn com.google.mlkit.vision.text.chinese.**
+# ML Kit Text Recognition: Devanagari non incluso
 -dontwarn com.google.mlkit.vision.text.devanagari.**
--dontwarn com.google.mlkit.vision.text.japanese.**
--dontwarn com.google.mlkit.vision.text.korean.**
 
-# ML Kit generale
+# ML Kit generale + script CJK
 -keep class com.google.mlkit.** { *; }
+-keep class com.google.mlkit.vision.text.chinese.** { *; }
+-keep class com.google.mlkit.vision.text.japanese.** { *; }
+-keep class com.google.mlkit.vision.text.korean.** { *; }
 -keep class com.google.android.gms.vision.** { *; }
 
 # Play Core: deferred components non usati

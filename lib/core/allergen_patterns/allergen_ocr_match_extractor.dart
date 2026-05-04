@@ -194,6 +194,9 @@ class AllergenOcrMatchExtractor {
   }
 
   bool _containsWholeNormalizedTerm(String text, String term) {
+    if (_hasCjk(term)) {
+      return text.contains(term);
+    }
     var searchStart = 0;
     while (true) {
       final index = text.indexOf(term, searchStart);
@@ -220,6 +223,18 @@ class AllergenOcrMatchExtractor {
         (codeUnit >= 97 && codeUnit <= 122);
   }
 
+  bool _hasCjk(String text) {
+    for (final rune in text.runes) {
+      if ((rune >= 0x4E00 && rune <= 0x9FFF) ||
+          (rune >= 0x3040 && rune <= 0x309F) ||
+          (rune >= 0x30A0 && rune <= 0x30FF) ||
+          (rune >= 0xAC00 && rune <= 0xD7AF)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   String _languageLabelForCode(String languageCode) {
     const labels = <String, String>{
       'it': 'Italiano',
@@ -229,6 +244,7 @@ class AllergenOcrMatchExtractor {
       'es': 'Espanol',
       'zh': 'Chinese',
       'ja': 'Japanese',
+      'ko': 'Korean',
     };
     return labels[languageCode] ?? languageCode.toUpperCase();
   }

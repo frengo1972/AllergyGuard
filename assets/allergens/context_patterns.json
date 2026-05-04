@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "updated_at": "2026-03-26",
+  "version": 2,
+  "updated_at": "2026-05-04",
   "patterns": [
     {
       "id": "contains_it",
@@ -161,6 +161,134 @@
       "type": "may_contain",
       "status": "verified",
       "confidence": 0.99
+    },
+    {
+      "id": "contains_zh",
+      "text": "配料",
+      "language": "zh",
+      "type": "contains",
+      "status": "verified",
+      "confidence": 0.99
+    },
+    {
+      "id": "contains_zh_2",
+      "text": "成分",
+      "language": "zh",
+      "type": "contains",
+      "status": "verified",
+      "confidence": 0.95
+    },
+    {
+      "id": "contains_zh_3",
+      "text": "含有",
+      "language": "zh",
+      "type": "contains",
+      "status": "verified",
+      "confidence": 0.97
+    },
+    {
+      "id": "may_contain_zh",
+      "text": "可能含有",
+      "language": "zh",
+      "type": "may_contain",
+      "status": "verified",
+      "confidence": 0.99
+    },
+    {
+      "id": "may_contain_zh_2",
+      "text": "可能含有微量",
+      "language": "zh",
+      "type": "may_contain",
+      "status": "verified",
+      "confidence": 0.97
+    },
+    {
+      "id": "facility_zh",
+      "text": "本品生产设备也加工",
+      "language": "zh",
+      "type": "facility",
+      "status": "verified",
+      "confidence": 0.93
+    },
+    {
+      "id": "contains_ja",
+      "text": "原材料名",
+      "language": "ja",
+      "type": "contains",
+      "status": "verified",
+      "confidence": 0.99
+    },
+    {
+      "id": "contains_ja_2",
+      "text": "成分",
+      "language": "ja",
+      "type": "contains",
+      "status": "verified",
+      "confidence": 0.93
+    },
+    {
+      "id": "may_contain_ja",
+      "text": "含む場合があります",
+      "language": "ja",
+      "type": "may_contain",
+      "status": "verified",
+      "confidence": 0.99
+    },
+    {
+      "id": "may_contain_ja_2",
+      "text": "入っている場合があります",
+      "language": "ja",
+      "type": "may_contain",
+      "status": "verified",
+      "confidence": 0.97
+    },
+    {
+      "id": "facility_ja",
+      "text": "同じ製造ラインで",
+      "language": "ja",
+      "type": "facility",
+      "status": "verified",
+      "confidence": 0.93
+    },
+    {
+      "id": "contains_ko",
+      "text": "원재료명",
+      "language": "ko",
+      "type": "contains",
+      "status": "verified",
+      "confidence": 0.99
+    },
+    {
+      "id": "contains_ko_2",
+      "text": "함유",
+      "language": "ko",
+      "type": "contains",
+      "status": "verified",
+      "confidence": 0.95
+    },
+    {
+      "id": "may_contain_ko",
+      "text": "혼입될 수 있습니다",
+      "language": "ko",
+      "type": "may_contain",
+      "status": "verified",
+      "confidence": 0.97
+    },
+    {
+      "id": "may_contain_ko_2",
+      "text": "포함될 수 있습니다",
+      "language": "ko",
+      "type": "may_contain",
+      "status": "verified",
+      "confidence": 0.95
+    },
+    {
+      "id": "facility_ko",
+      "text": "동일한 제조시설",
+      "language": "ko",
+      "type": "facility",
+      "status": "verified",
+      "confidence": 0.93
     }
   ]
 }
