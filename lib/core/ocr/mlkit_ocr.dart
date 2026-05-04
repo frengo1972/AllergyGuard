@@ -22,12 +22,10 @@ class MlKitOcr {
 
   final Map<TextRecognitionScript, TextRecognizer> _recognizers = {};
 
-  /// Script attivati per still capture (sempre tutti i principali).
+  /// Script attivati per still capture (solo Latin per evitare crash su device
+  /// senza modelli CJK compilati nel ML Kit).
   static const List<TextRecognitionScript> _stillCaptureScripts = [
     TextRecognitionScript.latin,
-    TextRecognitionScript.chinese,
-    TextRecognitionScript.japanese,
-    TextRecognitionScript.korean,
   ];
 
   Future<OcrResult> processImage(CameraImage image) async {
@@ -76,11 +74,11 @@ class MlKitOcr {
 
     OcrResult? best;
     for (final script in scripts) {
-      final recognizer = _recognizers.putIfAbsent(
-        script,
-        () => TextRecognizer(script: script),
-      );
       try {
+        final recognizer = _recognizers.putIfAbsent(
+          script,
+          () => TextRecognizer(script: script),
+        );
         final result = await _recognize(
           inputImage,
           recognizer,
@@ -90,7 +88,8 @@ class MlKitOcr {
           best = result;
         }
       } catch (_) {
-        // Recognizer puo' fallire se script non installato sul device.
+        // Recognizer puo' fallire se script non installato sul device
+        // (es. Chinese/Japanese/Korean non disponibili).
         continue;
       }
     }

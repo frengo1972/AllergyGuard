@@ -84,8 +84,22 @@ class AppCameraController {
       await stopImageStream();
     }
 
-    final file = await _controller!.takePicture();
-    return file.path;
+    try {
+      // Lock focus before capture to avoid NPE in camera plugin unlockAutoFocus
+      // when captureSession becomes null during the AF cycle on some Android devices.
+      await _controller!.setFocusMode(FocusMode.locked);
+    } catch (_) {}
+
+    try {
+      final file = await _controller!.takePicture();
+      return file.path;
+    } catch (_) {
+      return null;
+    } finally {
+      try {
+        await _controller!.setFocusMode(FocusMode.auto);
+      } catch (_) {}
+    }
   }
 
   /// Scatto a piena risoluzione che mette in pausa lo stream e poi lo riprende.
@@ -98,11 +112,19 @@ class AppCameraController {
       await stopImageStream();
     }
     try {
+      // Lock focus before capture to avoid NPE in camera plugin unlockAutoFocus
+      // when captureSession becomes null during the AF cycle on some Android devices.
+      await _controller!.setFocusMode(FocusMode.locked);
+    } catch (_) {}
+    try {
       final file = await _controller!.takePicture();
       return file.path;
     } catch (_) {
       return null;
     } finally {
+      try {
+        await _controller!.setFocusMode(FocusMode.auto);
+      } catch (_) {}
       if (wasStreaming && previousOnFrame != null) {
         await startImageStream(previousOnFrame);
       }
