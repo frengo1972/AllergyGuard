@@ -52,3 +52,5 @@ screenshots/
 assets/branding/Gemini_Generated_Image_*.png
 assets/branding/immagine in primo piano.png
 mailinglist.txt
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/Generated.xcconfig
