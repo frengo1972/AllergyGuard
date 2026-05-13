@@ -191,7 +191,7 @@ class LocalAllergenRepository implements AllergenRepository {
 
     return allergens
         .whereType<Map>()
-        .map((item) => Allergen.fromJson(Map<String, dynamic>.from(item as Map)))
+        .map((item) => Allergen.fromJson(Map<String, dynamic>.from(item)))
         .toList();
   }
 

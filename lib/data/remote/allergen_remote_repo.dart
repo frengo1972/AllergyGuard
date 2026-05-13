@@ -45,7 +45,7 @@ class AllergenRemoteRepository {
 
       return (data as List<dynamic>)
           .whereType<Map>()
-          .map((row) => Allergen.fromJson(Map<String, dynamic>.from(row as Map)))
+          .map((row) => Allergen.fromJson(Map<String, dynamic>.from(row)))
           .toList(growable: false);
     } on PostgrestException {
       return <Allergen>[];

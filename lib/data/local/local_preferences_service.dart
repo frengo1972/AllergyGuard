@@ -86,7 +86,7 @@ class LocalPreferencesService {
     final decoded = jsonDecode(raw) as List<dynamic>;
     return decoded
         .whereType<Map>()
-        .map((item) => Map<String, dynamic>.from(item as Map))
+        .map((item) => Map<String, dynamic>.from(item))
         .toList();
   }
 
@@ -105,7 +105,7 @@ class LocalPreferencesService {
     final decoded = jsonDecode(raw) as List<dynamic>;
     return decoded
         .whereType<Map>()
-        .map((item) => Map<String, dynamic>.from(item as Map))
+        .map((item) => Map<String, dynamic>.from(item))
         .toList();
   }
 
